@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>A-10 CAS JTAC Tactical Simulator</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; user-select: none; -webkit-user-select: none; }
+        body, html { width: 100%; height: 100%; overflow: hidden; background-color: #050b08; font-family: 'Courier New', Courier, monospace; color: #00ff66; }
+        #game-container { display: flex; flex-direction: column; width: 100vw; height: 100vh; }
+        #ui-header { display: flex; justify-content: space-around; align-items: center; height: 36px; background: #0a1610; border-bottom: 2px solid #005522; font-size: 11px; font-weight: bold; z-index: 10; }
+        .label { color: #00aa44; }
+        .green { color: #00ff66; }
+        #canvas-wrapper { flex: 1; position: relative; background: #020604; }
+        canvas { display: block; width: 100%; height: 100%; }
+        #map-controls { position: absolute; right: 10px; top: 10px; display: flex; flex-direction: column; gap: 6px; z-index: 5; }
+        #map-controls button { width: 40px; height: 40px; background: rgba(10, 22, 16, 0.85); border: 1px solid #00ff66; color: #00ff66; font-size: 16px; font-weight: bold; border-radius: 4px; cursor: pointer; }
+        #map-controls button:active { background: #00ff66; color: #000; }
+        .alert-box { position: absolute; top: 10px; left: 50%; transform: translateX(-50%); background: rgba(180, 0, 0, 0.9); color: #fff; border: 1px solid #ff4444; padding: 6px 12px; font-size: 11px; font-weight: bold; border-radius: 4px; z-index: 6; text-align: center; width: 85%; }
+        .hidden { display: none; }
+        #ui-kneeboard { height: 170px; background: #08120c; border-top: 2px solid #005522; padding: 8px 12px; display: flex; flex-direction: column; gap: 6px; z-index: 10; }
+        .kneeboard-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #003311; padding-bottom: 4px; }
+        .kneeboard-title { font-size: 11px; color: #00aa44; font-weight: bold; }
+        .status-tag { font-size: 10px; color: #ffcc00; }
+        #kneeboard-content { font-size: 11px; line-height: 1.4; color: #00dd55; flex: 1; overflow-y: auto; }
+        .hint-text { color: #008833; font-style: italic; }
+        .brief-btn { margin-top: 8px; width: 100%; padding: 10px; background: #005522; border: 1px solid #00ff66; color: #ffffff; font-family: inherit; font-weight: bold; font-size: 12px; border-radius: 4px; cursor: pointer; }
+        .brief-btn:active { background: #00ff66; color: #000; }
+    </style>
+</head>
+<body>
+    <div id="game-container">
+        <header id="ui-header">
+            <div class="status-box"><span class="label">JTAC</span> <span id="callsign">ALPHA-1</span></div>
+            <div class="status-box"><span class="label">A-10:</span> <span id="a10-status" class="green">INBOUND</span></div>
+            <div class="status-box"><span class="label">GRID:</span> <span id="current-grid">NV 341 882</span></div>
+        </header>
+
+        <main id="canvas-wrapper">
+            <canvas id="tactical-map"></canvas>
+            <div id="map-controls">
+                <button id="btn-zoom-in">+</button>
+                <button id="btn-zoom-out">-</button>
+                <button id="btn-reset">CENTER</button>
+            </div>
+            <div id="danger-alert" class="alert-box hidden">⚠️ WARNING: FLIGHT PATH CROSSES SAM THREAT ZONE!</div>
+        </main>
+
+        <footer id="ui-kneeboard">
+            <div class="kneeboard-header">
+                <span class="kneeboard-title">JTAC TACTICAL KNEEBOARD (9-LINE)</span>
+                <span id="target-status" class="status-tag">STANDBY / SELECT TARGET</span>
+            </div>
+            <div id="kneeboard-content">
+                <p class="hint-text">請在地圖上點擊敵方目標 (OBJ-01 ~ OBJ-03) 以開始規劃 CAS 攻擊路徑...</p>
+            </div>
+        </footer>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('tactical-map');
+        const ctx = canvas.getContext('2d');
+        const alertBox = document.getElementById('danger-alert');
+        const kneeboardContent = document.getElementById('kneeboard-content');
+        const targetStatus = document.getElementById('target-status');
+
+        let camera = { x: 0, y: 0, zoom: 1, minZoom: 0.5, maxZoom: 2.5 };
+        let isDragging = false;
+        let startPan = { x: 0, y: 0 };
+        let selectedTarget = null;
+
+        const mapData = {
+            ip: { x: -200, y: -160, name: "IP DIXIE" },
+            egress: { x: 180, y: -60, name: "EGRESS NORTH" },
+            alphaTeam: { x: -140, y: 140, name: "ALPHA 1-1" },
+            samSites: [
+                { id: "SAM-1", x: 100, y: 120, radius: 100, name: "SAM-01 (SA-6)" },
+                { id: "SAM-2", x: 150, y: -180, radius: 110, name: "SAM-02 (ZSU-23)" }
+            ],
+            targets: [
+                { id: 1, code: "OBJ-01", name: "T-72 Tank Platoon", type: "ARMOR", x: -20, y: -30, elev: "450 FT", grid: "NV 341 882" },
+                { id: 2, code: "OBJ-02", name: "Supply Convoy", type: "VEHICLE", x: 40, y: 80, elev: "410 FT", grid: "NV 348 871" },
+                { id: 3, code: "OBJ-03", name: "Mortar Position", type: "INDIRECT FIRE", x: 110, y: -90, elev: "520 FT", grid: "NV 355 893" }
+            ]
+        };
+
+        function resizeCanvas() {
+            canvas.width = canvas.parentElement.clientWidth;
+            canvas.height = canvas.parentElement.clientHeight;
+            drawMap();
+        }
+        window.addEventListener('resize', resizeCanvas);
+
+        function drawMap() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.save();
+            ctx.translate(canvas.width / 2 + camera.x, canvas.height / 2 + camera.y);
+            ctx.scale(camera.zoom, camera.zoom);
+
+            drawGrid();
+            drawSAMSites();
+            drawFlightPath();
+            drawFriendly();
+            drawTargets();
+
+            ctx.restore();
+        }
+
+        function drawGrid() {
+            ctx.strokeStyle = "#002211";
+            ctx.lineWidth = 1 / camera.zoom;
+            const gridSize = 80;
+            const extent = 800;
+            for (let x = -extent; x <= extent; x += gridSize) {
+                ctx.beginPath(); ctx.moveTo(x, -extent); ctx.lineTo(x, extent); ctx.stroke();
+            }
+            for (let y = -extent; y <= extent; y += gridSize) {
+                ctx.beginPath(); ctx.moveTo(-extent, y); ctx.lineTo(extent, y); ctx.stroke();
+            }
+        }
+
+        function drawSAMSites() {
+            mapData.samSites.forEach(sam => {
+                ctx.beginPath();
+                ctx.arc(sam.x, sam.y, sam.radius, 0, Math.PI * 2);
+                ctx.fillStyle = "rgba(255, 0, 0, 0.12)";
+                ctx.fill();
+                ctx.strokeStyle = "rgba(255, 60, 60, 0.7)";
+                ctx.lineWidth = 1.5 / camera.zoom;
+                ctx.setLineDash([4, 4]);
+                ctx.stroke();
+                ctx.setLineDash([]);
+
+                ctx.fillStyle = "#ff5555";
+                ctx.font = `${10 / camera.zoom}px Courier New`;
+                ctx.fillText(sam.name, sam.x - 40, sam.y + sam.radius + 12);
+            });
+        }
+
+        function drawFriendly() {
+            ctx.fillStyle = "#00ffff";
+            ctx.beginPath();
+            ctx.arc(mapData.alphaTeam.x, mapData.alphaTeam.y, 6, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.font = `${10 / camera.zoom}px Courier New`;
+            ctx.fillText("▲ " + mapData.alphaTeam.name, mapData.alphaTeam.x + 10, mapData.alphaTeam.y + 3);
+        }
+
+        function drawTargets() {
+            mapData.targets.forEach(tgt => {
+                const isSelected = selectedTarget && selectedTarget.id === tgt.id;
+                ctx.fillStyle = isSelected ? "#ffff00" : "#ff3333";
+                ctx.strokeStyle = isSelected ? "#ffffff" : "#ff9999";
+                ctx.lineWidth = (isSelected ? 2 : 1) / camera.zoom;
+
+                ctx.beginPath();
+                ctx.arc(tgt.x, tgt.y, 8, 0, Math.PI * 2);
+                ctx.stroke();
+                
+                ctx.beginPath();
+                ctx.arc(tgt.x, tgt.y, 2, 0, Math.PI * 2);
+                ctx.fill();
+
+                ctx.fillStyle = isSelected ? "#ffff00" : "#ff6666";
+                ctx.font = `${11 / camera.zoom}px Courier New`;
+                ctx.fillText(tgt.code, tgt.x + 12, tgt.y - 2);
+                ctx.font = `${9 / camera.zoom}px Courier New`;
+                ctx.fillText(tgt.type, tgt.x + 12, tgt.y + 9);
+            });
+        }
+
+        function checkSAMIntersection(p1, p2) {
+            let intersects = false;
+            mapData.samSites.forEach(sam => {
+                const dx = p2.x - p1.x;
+                const dy = p2.y - p1.y;
+                const len = Math.hypot(dx, dy);
+                const u = Math.max(0, Math.min(1, ((sam.x - p1.x) * dx + (sam.y - p1.y) * dy) / (len * len)));
+                const projX = p1.x + u * dx;
+                const projY = p1.y + u * dy;
+                const dist = Math.hypot(sam.x - projX, sam.y - projY);
+                if (dist < sam.radius) intersects = true;
+            });
+            return intersects;
+        }
+
+        function drawFlightPath() {
+            if (!selectedTarget) return;
+
+            ctx.fillStyle = "#00ffff";
+            ctx.font = `${10 / camera.zoom}px Courier New`;
+            ctx.fillText("● " + mapData.ip.name, mapData.ip.x - 30, mapData.ip.y - 10);
+            ctx.fillText("● " + mapData.egress.name, mapData.egress.x + 10, mapData.egress.y);
+
+            const isIngressDanger = checkSAMIntersection(mapData.ip, selectedTarget);
+            const isEgressDanger = checkSAMIntersection(selectedTarget, mapData.egress);
+
+            if (isIngressDanger || isEgressDanger) {
+                alertBox.classList.remove('hidden');
+            } else {
+                alertBox.classList.add('hidden');
+            }
+
+            ctx.lineWidth = 2 / camera.zoom;
+            ctx.setLineDash([6, 4]);
+
+            ctx.strokeStyle = isIngressDanger ? "#ff2222" : "#00ffff";
+            ctx.beginPath();
+            ctx.moveTo(mapData.ip.x, mapData.ip.y);
+            ctx.lineTo(selectedTarget.x, selectedTarget.y);
+            ctx.stroke();
+
+            ctx.strokeStyle = isEgressDanger ? "#ff2222" : "#ffff00";
+            ctx.beginPath();
+            ctx.moveTo(selectedTarget.x, selectedTarget.y);
+            ctx.lineTo(mapData.egress.x, mapData.egress.y);
+            ctx.stroke();
+
+            ctx.setLineDash([]);
+        }
+
+        canvas.addEventListener('click', (e) => {
+            const rect = canvas.getBoundingClientRect();
+            const clickX = e.clientX - rect.left;
+            const clickY = e.clientY - rect.top;
+
+            const mapX = (clickX - canvas.width / 2 - camera.x) / camera.zoom;
+            const mapY = (clickY - canvas.height / 2 - camera.y) / camera.zoom;
+
+            let clicked = null;
+            mapData.targets.forEach(tgt => {
+                const dist = Math.hypot(tgt.x - mapX, tgt.y - mapY);
+                if (dist < 25 / camera.zoom) clicked = tgt;
+            });
+
+            if (clicked) {
+                selectedTarget = clicked;
+                updateKneeboard(clicked);
+                drawMap();
+            }
+        });
+
+        function updateKneeboard(tgt) {
+            targetStatus.textContent = `TARGET LOCKED: ${tgt.code}`;
+            targetStatus.style.color = "#ffff00";
+
+            kneeboardContent.innerHTML = `
+                <div><strong>1-3. IP/Hdg/Dist:</strong> DIXIE / 125° / 4.2 NM</div>
+                <div><strong>4. ELEVATION:</strong> ${tgt.elev}</div>
+                <div><strong>5. TARGET:</strong> ${tgt.name} (${tgt.type})</div>
+                <div><strong>6. LOCATION:</strong> ${tgt.grid}</div>
+                <div><strong>8. FRIENDLIES:</strong> ALPHA 1-1 (SOUTH 600m)</div>
+                <button class="brief-btn" onclick="send9Line()">► TRANSMIT 9-LINE TO HOG-1</button>
+            `;
+        }
+
+        function send9Line() {
+            alert(`[RADIO TRANSMISSION]\nAlpha-1 to Hog-1: 9-Line Briefing transmitted for ${selectedTarget.code}.\nHog-1 is Inbound!`);
+        }
+
+        canvas.addEventListener('mousedown', (e) => { isDragging = true; startPan = { x: e.clientX - camera.x, y: e.clientY - camera.y }; });
+        window.addEventListener('mousemove', (e) => { if (isDragging) { camera.x = e.clientX - startPan.x; camera.y = e.clientY - startPan.y; drawMap(); } });
+        window.addEventListener('mouseup', () => isDragging = false);
+
+        canvas.addEventListener('touchstart', (e) => { if (e.touches.length === 1) { isDragging = true; startPan = { x: e.touches[0].clientX - camera.x, y: e.touches[0].clientY - camera.y }; } }, { passive: true });
+        canvas.addEventListener('touchmove', (e) => { if (isDragging && e.touches.length === 1) { camera.x = e.touches[0].clientX - startPan.x; camera.y = e.touches[0].clientY - startPan.y; drawMap(); } }, { passive: true });
+        canvas.addEventListener('touchend', () => isDragging = false);
+
+        document.getElementById('btn-zoom-in').addEventListener('click', () => { camera.zoom = Math.min(camera.maxZoom, camera.zoom + 0.2); drawMap(); });
+        document.getElementById('btn-zoom-out').addEventListener('click', () => { camera.zoom = Math.max(camera.minZoom, camera.zoom - 0.2); drawMap(); });
+        document.getElementById('btn-reset').addEventListener('click', () => { camera.x = 0; camera.y = 0; camera.zoom = 1; drawMap(); });
+
+        resizeCanvas();
+    </script>
+</body>
+</html>
