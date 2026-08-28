@@ -98,7 +98,6 @@
             <button class="score-close-btn" id="score-close">確認 / CONTINUE</button>
         </div>
     </div>
-
     <script>
         const canvas = document.getElementById('tactical-map');
         const ctx = canvas.getContext('2d');
@@ -437,5 +436,23 @@
             startAttackRun();
         });
 
-        scoreClose.addEventListener('
-                                    
+        scoreClose.addEventListener('click', () => {
+            scoreModal.classList.add('hidden');
+        });
+
+        canvas.addEventListener('mousedown', (e) => { isDragging = true; startPan = { x: e.clientX - camera.x, y: e.clientY - camera.y }; });
+        window.addEventListener('mousemove', (e) => { if (isDragging) { camera.x = e.clientX - startPan.x; camera.y = e.clientY - startPan.y; drawMap(); } });
+        window.addEventListener('mouseup', () => isDragging = false);
+
+        canvas.addEventListener('touchstart', (e) => { if (e.touches.length === 1) { isDragging = true; startPan = { x: e.touches[0].clientX - camera.x, y: e.touches[0].clientY - camera.y }; } }, { passive: true });
+        canvas.addEventListener('touchmove', (e) => { if (isDragging && e.touches.length === 1) { camera.x = e.touches[0].clientX - startPan.x; camera.y = e.touches[0].clientY - startPan.y; drawMap(); } }, { passive: true });
+        canvas.addEventListener('touchend', () => isDragging = false);
+
+        document.getElementById('btn-zoom-in').addEventListener('click', () => { camera.zoom = Math.min(camera.maxZoom, camera.zoom + 0.2); drawMap(); });
+        document.getElementById('btn-zoom-out').addEventListener('click', () => { camera.zoom = Math.max(camera.minZoom, camera.zoom - 0.2); drawMap(); });
+        document.getElementById('btn-reset').addEventListener('click', () => { camera.x = 0; camera.y = 0; camera.zoom = 1; drawMap(); });
+
+        initCanvas();
+    </script>
+</body>
+</html>
