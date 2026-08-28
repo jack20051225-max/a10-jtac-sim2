@@ -19,30 +19,30 @@
         .alert-box { position: absolute; top: 10px; left: 50%; transform: translateX(-50%); background: rgba(180, 0, 0, 0.9); color: #fff; border: 1px solid #ff4444; padding: 6px 12px; font-size: 11px; font-weight: bold; border-radius: 4px; z-index: 6; text-align: center; width: 85%; }
         .hidden { display: none !important; }
 
-        /* 懸浮目標資訊視窗 */
+        /* 懸浮目標資訊視窗 (手機防裁切優化版) */
         #target-modal {
             position: absolute;
-            bottom: 20px;
+            bottom: 40px;
             left: 50%;
             transform: translateX(-50%);
-            width: 90%;
-            max-width: 380px;
+            width: 88%;
+            max-width: 360px;
             background: rgba(8, 18, 12, 0.95);
             border: 2px solid #00ff66;
             border-radius: 8px;
-            padding: 12px;
+            padding: 10px;
             box-shadow: 0 0 15px rgba(0, 255, 102, 0.3);
             z-index: 20;
             display: flex;
             flex-direction: column;
-            gap: 8px;
+            gap: 6px;
         }
         .modal-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #005522; padding-bottom: 4px; }
-        .modal-title { color: #ffff00; font-weight: bold; font-size: 13px; }
+        .modal-title { color: #ffff00; font-weight: bold; font-size: 12px; }
         .close-btn { background: none; border: none; color: #ff5555; font-size: 16px; font-weight: bold; cursor: pointer; padding: 0 5px; }
-        .modal-body { font-size: 11px; line-height: 1.5; color: #00dd55; }
-        .modal-body div { margin-bottom: 3px; }
-        .action-btn { width: 100%; padding: 12px; background: #007733; border: 1px solid #00ff66; color: #ffffff; font-family: inherit; font-weight: bold; font-size: 13px; border-radius: 4px; cursor: pointer; margin-top: 4px; }
+        .modal-body { font-size: 10px; line-height: 1.4; color: #00dd55; }
+        .modal-body div { margin-bottom: 2px; }
+        .action-btn { width: 100%; padding: 8px; background: #007733; border: 1px solid #00ff66; color: #ffffff; font-family: inherit; font-weight: bold; font-size: 12px; border-radius: 4px; cursor: pointer; margin-top: 2px; }
         .action-btn:active { background: #00ff66; color: #000; }
     </style>
 </head>
