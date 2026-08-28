@@ -18,12 +18,11 @@
         #canvas-wrapper { position: absolute; top: 45px; left: 0; right: 0; bottom: 0; background: #010302; }
         canvas { display: block; width: 100%; height: 100%; }
 
-        /* 戰術工具列：支援多航點與 IP/Egress 設置 */
         #tactical-toolbar {
             position: absolute; top: 10px; left: 10px; display: flex; flex-direction: column; gap: 4px; z-index: 5;
         }
         .tool-btn {
-            padding: 5px 8px; background: rgba(6, 16, 10, 0.95); border: 1px solid #008844;
+            padding: 6px 9px; background: rgba(6, 16, 10, 0.95); border: 1px solid #008844;
             color: #008844; font-family: inherit; font-size: 8.5px; font-weight: bold; border-radius: 4px; cursor: pointer; text-align: left;
         }
         .tool-btn.active { border-color: #00ff66; color: #00ff66; background: rgba(0, 85, 34, 0.6); box-shadow: 0 0 8px rgba(0,255,102,0.4); }
@@ -134,7 +133,6 @@
             <button class="score-close-btn" id="score-close">確認 / CONTINUE</button>
         </div>
     </div>
-
     <script>
         const canvas = document.getElementById('tactical-map');
         const ctx = canvas.getContext('2d');
@@ -191,25 +189,24 @@
         };
 
         let mapData = {
-            ip: { x: -180, y: 0, name: "IP DIXIE" },
-            egress: { x: 180, y: 0, name: "EGRESS NORTH" },
-            waypoints: [], // 支援多個中繼航點
-            alphaTeam: { x: -120, y: 110, name: "ALPHA 1-1" },
-            noFlyZones: [], // 外圍不規則山谷與禁飛/防空區
+            ip: { x: -180, y: 120, name: "IP DIXIE" },
+            egress: { x: 180, y: 120, name: "EGRESS NORTH" },
+            waypoints: [],
+            alphaTeam: { x: -120, y: 60, name: "ALPHA 1-1" },
+            noFlyZones: [], 
             targets: []
         };
 
         function generateCampaignWave() {
-            mapData.ip = { x: -190, y: -40, name: "IP BAKER" };
-            mapData.egress = { x: 190, y: -40, name: "EGRESS ALPHA" };
+            mapData.ip = { x: -180, y: 130, name: "IP BAKER" };
+            mapData.egress = { x: 180, y: 130, name: "EGRESS ALPHA" };
             mapData.waypoints = [];
-            mapData.alphaTeam = { x: -100, y: 100, name: "ALPHA 1-1" };
+            mapData.alphaTeam = { x: -100, y: 80, name: "ALPHA 1-1" };
 
-            // 設置外圍不規則禁飛區/防空山脈 (模擬山谷地形封鎖)
             mapData.noFlyZones = [
-                { x: -50, y: -20, radius: 65, name: "RESTRICTED VALLEY NORTH" },
-                { x: 50, y: -20, radius: 65, name: "RESTRICTED VALLEY SOUTH" },
-                { x: 0, y: 80, radius: 55, name: "SAM OUTER PERIMETER" }
+                { x: 0, y: -110, radius: 65, name: "RESTRICTED PEAKS NORTH" },
+                { x: -130, y: -20, radius: 55, name: "WESTERN HIGHWAY BLOCK" },
+                { x: 130, y: -20, radius: 55, name: "EASTERN RIDGE" }
             ];
 
             mapData.targets = [];
@@ -223,14 +220,13 @@
             const targetCount = 2 + gameState.wave;
             for (let i = 0; i < targetCount; i++) {
                 let tDef = tgtPool[i % tgtPool.length];
-                // 目標區維持在中央乾淨區域，讓玩家可以透過外圍山谷繞路進入
                 mapData.targets.push({
                     id: i + 1,
                     code: `OBJ-0${i+1}`,
                     name: tDef.name,
                     type: tDef.type,
-                    x: (i * 35) - 35,
-                    y: 20 + (i % 2) * 25,
+                    x: (i * 45) - ((targetCount - 1) * 22.5),
+                    y: (i % 2) * 20 - 10,
                     elev: tDef.elev,
                     grid: `MGRS 38T LF ${420+i} ${190+i}`,
                     bestWeapon: tDef.best,
@@ -241,6 +237,7 @@
 
             updateUIStats();
         }
+
         function updateUIStats() {
             waveDisplay.textContent = `${gameState.wave}/${gameState.maxWaves}`;
             scoreDisplay.textContent = gameState.score;
@@ -348,7 +345,7 @@
                 ctx.fillText(tgt.destroyed ? tgt.code + " [DESTROYED]" : `${tgt.code} (${tgt.type})`, tgt.x + 12, tgt.y - 2);
             });
         }
-
+    <script>
         function checkSegmentIntersection(p1, p2) {
             let intersects = false;
             mapData.noFlyZones.forEach(nfz => {
@@ -371,7 +368,6 @@
                 return;
             }
 
-            // 組合完整航線點陣列：IP -> [WP1, WP2, ...] -> Target -> [WP...] -> Egress
             let fullPath = [mapData.ip, ...mapData.waypoints, selectedTarget, mapData.egress];
             let hasDanger = false;
 
@@ -408,7 +404,6 @@
             const { path, progress, target } = attackAnimation;
             if (!path || path.length < 2) return;
 
-            // 根據總航點計算動畫插值
             let totalSegs = path.length - 1;
             let currentFloatIndex = progress * totalSegs;
             let segIndex = Math.min(Math.floor(currentFloatIndex), totalSegs - 1);
@@ -421,7 +416,6 @@
             let currentY = p1.y + (p2.y - p1.y) * t;
             let angle = Math.atan2(p2.y - p1.y, p2.x - p1.x);
 
-            // 當接近目標時引爆
             if (segIndex >= totalSegs - 1 && t > 0.8) {
                 target.destroyed = true;
                 ctx.fillStyle = "rgba(255, 120, 0, 0.9)";
