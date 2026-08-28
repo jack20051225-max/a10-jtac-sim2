@@ -18,13 +18,8 @@
         #canvas-wrapper { position: absolute; top: 45px; left: 0; right: 0; bottom: 0; background: #010302; }
         canvas { display: block; width: 100%; height: 100%; }
 
-        #tactical-toolbar {
-            position: absolute; top: 10px; left: 10px; display: flex; flex-direction: column; gap: 4px; z-index: 5;
-        }
-        .tool-btn {
-            padding: 6px 9px; background: rgba(6, 16, 10, 0.95); border: 1px solid #008844;
-            color: #008844; font-family: inherit; font-size: 8.5px; font-weight: bold; border-radius: 4px; cursor: pointer; text-align: left;
-        }
+        #tactical-toolbar { position: absolute; top: 10px; left: 10px; display: flex; flex-direction: column; gap: 4px; z-index: 5; }
+        .tool-btn { padding: 6px 9px; background: rgba(6, 16, 10, 0.95); border: 1px solid #008844; color: #008844; font-family: inherit; font-size: 8.5px; font-weight: bold; border-radius: 4px; cursor: pointer; text-align: left; }
         .tool-btn.active { border-color: #00ff66; color: #00ff66; background: rgba(0, 85, 34, 0.6); box-shadow: 0 0 8px rgba(0,255,102,0.4); }
 
         #map-controls { position: absolute; right: 10px; top: 10px; display: flex; flex-direction: column; gap: 6px; z-index: 5; }
@@ -36,13 +31,7 @@
         @keyframes flash { 0% { opacity: 1; } 50% { opacity: 0.3; } 100% { opacity: 1; } }
         .hidden { display: none !important; }
 
-        #target-modal {
-            position: absolute; bottom: 15px; left: 50%; transform: translateX(-50%);
-            width: 95%; max-width: 410px; background: rgba(4, 12, 7, 0.98);
-            border: 2px solid #00ff66; border-radius: 6px; padding: 10px;
-            z-index: 20; display: flex; flex-direction: column; gap: 6px;
-            box-shadow: 0 0 15px rgba(0, 255, 102, 0.3);
-        }
+        #target-modal { position: absolute; bottom: 15px; left: 50%; transform: translateX(-50%); width: 95%; max-width: 410px; background: rgba(4, 12, 7, 0.98); border: 2px solid #00ff66; border-radius: 6px; padding: 10px; z-index: 20; display: flex; flex-direction: column; gap: 6px; box-shadow: 0 0 15px rgba(0, 255, 102, 0.3); }
         .modal-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #004422; padding-bottom: 4px; }
         .modal-title { color: #ffff00; font-weight: bold; font-size: 11px; }
         .close-btn { background: none; border: none; color: #ff5555; font-size: 16px; font-weight: bold; cursor: pointer; }
@@ -57,19 +46,12 @@
         .weapon-select-section { border-top: 1px dashed #004422; padding-top: 4px; }
         .weapon-label { color: #ffff00; font-size: 9px; font-weight: bold; margin-bottom: 3px; }
         .weapon-options { display: flex; gap: 3px; }
-        .weapon-btn {
-            flex: 1; padding: 5px 2px; background: #030d07; border: 1px solid #008844;
-            color: #008844; font-family: inherit; font-size: 8.5px; font-weight: bold; border-radius: 3px; text-align: center; cursor: pointer;
-        }
+        .weapon-btn { flex: 1; padding: 5px 2px; background: #030d07; border: 1px solid #008844; color: #008844; font-family: inherit; font-size: 8.5px; font-weight: bold; border-radius: 3px; text-align: center; cursor: pointer; }
         .weapon-btn.selected { background: #005522; border-color: #00ff66; color: #ffffff; }
 
         .action-btn { width: 100%; padding: 7px; background: #005522; border: 1px solid #00ff66; color: #ffffff; font-family: inherit; font-weight: bold; font-size: 10px; border-radius: 4px; cursor: pointer; margin-top: 2px; }
 
-        #score-modal {
-            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            width: 88%; max-width: 340px; background: rgba(3, 10, 6, 0.99);
-            border: 2px solid #ffff00; border-radius: 8px; padding: 14px; z-index: 30; text-align: center;
-        }
+        #score-modal { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 88%; max-width: 340px; background: rgba(3, 10, 6, 0.99); border: 2px solid #ffff00; border-radius: 8px; padding: 14px; z-index: 30; text-align: center; }
         #score-title { color: #ffff00; font-size: 12px; font-weight: bold; margin-bottom: 6px; }
         #score-desc { color: #00ff66; font-size: 10px; line-height: 1.4; margin-bottom: 10px; text-align: left; background: #010502; padding: 6px; border: 1px solid #004422; }
         .score-close-btn { width: 100%; padding: 6px; background: #005522; border: 1px solid #ffff00; color: #ffff00; font-family: inherit; font-weight: bold; border-radius: 4px; cursor: pointer; }
@@ -133,6 +115,7 @@
             <button class="score-close-btn" id="score-close">確認 / CONTINUE</button>
         </div>
     </div>
+
     <script>
         const canvas = document.getElementById('tactical-map');
         const ctx = canvas.getContext('2d');
@@ -179,14 +162,7 @@
         let selectedWeapon = 'mav';
         let attackAnimation = null;
         
-        let gameState = {
-            score: 0,
-            wave: 1,
-            maxWaves: 3,
-            ammoMav: 4,
-            ammoGbu: 2,
-            isGameOver: false
-        };
+        let gameState = { score: 0, wave: 1, maxWaves: 3, ammoMav: 4, ammoGbu: 2, isGameOver: false };
 
         let mapData = {
             ip: { x: -180, y: 120, name: "IP DIXIE" },
@@ -221,20 +197,12 @@
             for (let i = 0; i < targetCount; i++) {
                 let tDef = tgtPool[i % tgtPool.length];
                 mapData.targets.push({
-                    id: i + 1,
-                    code: `OBJ-0${i+1}`,
-                    name: tDef.name,
-                    type: tDef.type,
-                    x: (i * 45) - ((targetCount - 1) * 22.5),
-                    y: (i % 2) * 20 - 10,
-                    elev: tDef.elev,
-                    grid: `MGRS 38T LF ${420+i} ${190+i}`,
-                    bestWeapon: tDef.best,
-                    prf: tDef.prf,
-                    destroyed: false
+                    id: i + 1, code: `OBJ-0${i+1}`, name: tDef.name, type: tDef.type,
+                    x: (i * 45) - ((targetCount - 1) * 22.5), y: (i % 2) * 20 - 10,
+                    elev: tDef.elev, grid: `MGRS 38T LF ${420+i} ${190+i}`,
+                    bestWeapon: tDef.best, prf: tDef.prf, destroyed: false
                 });
             }
-
             updateUIStats();
         }
 
@@ -258,26 +226,22 @@
         function drawMap() {
             ctx.fillStyle = "#010302";
             ctx.fillRect(0, 0, canvas.width, canvas.height);
-
             ctx.save();
             ctx.translate(canvas.width / 2 + camera.x, canvas.height / 2 + camera.y);
             ctx.scale(camera.zoom, camera.zoom);
-
             drawGrid();
             drawNoFlyZones();
             drawFlightPath();
             drawFriendly();
             drawTargets();
             if (attackAnimation) drawAttackAnimation();
-
             ctx.restore();
         }
 
         function drawGrid() {
             ctx.strokeStyle = "#001a0d";
             ctx.lineWidth = 1 / camera.zoom;
-            const gridSize = 60;
-            const extent = 600;
+            const gridSize = 60, extent = 600;
             for (let x = -extent; x <= extent; x += gridSize) {
                 ctx.beginPath(); ctx.moveTo(x, -extent); ctx.lineTo(x, extent); ctx.stroke();
             }
@@ -297,7 +261,6 @@
                 ctx.setLineDash([4, 4]);
                 ctx.stroke();
                 ctx.setLineDash([]);
-
                 ctx.fillStyle = "#ff5555";
                 ctx.font = `${9 / camera.zoom}px Courier New`;
                 ctx.fillText(`⛰️ ${nfz.name}`, nfz.x - 42, nfz.y + nfz.radius + 10);
@@ -331,64 +294,41 @@
                 ctx.fillStyle = tgt.destroyed ? "#444444" : (isSelected ? "#ffff00" : "#ff3333");
                 ctx.strokeStyle = tgt.destroyed ? "#666666" : (isSelected ? "#ffffff" : "#ff9999");
                 ctx.lineWidth = (isSelected ? 2 : 1) / camera.zoom;
-
-                ctx.beginPath();
-                ctx.arc(tgt.x, tgt.y, 8, 0, Math.PI * 2);
-                ctx.stroke();
-                
-                ctx.beginPath();
-                ctx.arc(tgt.x, tgt.y, 2.5, 0, Math.PI * 2);
-                ctx.fill();
-
+                ctx.beginPath(); ctx.arc(tgt.x, tgt.y, 8, 0, Math.PI * 2); ctx.stroke();
+                ctx.beginPath(); ctx.arc(tgt.x, tgt.y, 2.5, 0, Math.PI * 2); ctx.fill();
                 ctx.fillStyle = tgt.destroyed ? "#666666" : (isSelected ? "#ffff00" : "#ff6666");
                 ctx.font = `${10 / camera.zoom}px Courier New`;
                 ctx.fillText(tgt.destroyed ? tgt.code + " [DESTROYED]" : `${tgt.code} (${tgt.type})`, tgt.x + 12, tgt.y - 2);
             });
         }
-    <script>
+
         function checkSegmentIntersection(p1, p2) {
             let intersects = false;
             mapData.noFlyZones.forEach(nfz => {
-                const dx = p2.x - p1.x;
-                const dy = p2.y - p1.y;
+                const dx = p2.x - p1.x, dy = p2.y - p1.y;
                 const len = Math.hypot(dx, dy);
                 if (len === 0) return;
                 const u = Math.max(0, Math.min(1, ((nfz.x - p1.x) * dx + (nfz.y - p1.y) * dy) / (len * len)));
-                const projX = p1.x + u * dx;
-                const projY = p1.y + u * dy;
-                const dist = Math.hypot(nfz.x - projX, nfz.y - projY);
-                if (dist < nfz.radius) intersects = true;
+                const projX = p1.x + u * dx, projY = p1.y + u * dy;
+                if (Math.hypot(nfz.x - projX, nfz.y - projY) < nfz.radius) intersects = true;
             });
             return intersects;
         }
 
         function drawFlightPath() {
-            if (!selectedTarget) {
-                alertBox.classList.add('hidden');
-                return;
-            }
-
+            if (!selectedTarget) { alertBox.classList.add('hidden'); return; }
             let fullPath = [mapData.ip, ...mapData.waypoints, selectedTarget, mapData.egress];
             let hasDanger = false;
-
             ctx.lineWidth = 2 / camera.zoom;
             ctx.setLineDash([5, 3]);
-
             for (let i = 0; i < fullPath.length - 1; i++) {
-                let p1 = fullPath[i];
-                let p2 = fullPath[i+1];
+                let p1 = fullPath[i], p2 = fullPath[i+1];
                 let segmentDanger = checkSegmentIntersection(p1, p2);
                 if (segmentDanger) hasDanger = true;
-
                 ctx.strokeStyle = segmentDanger ? "#ff3333" : "#00ffcc";
-                ctx.beginPath();
-                ctx.moveTo(p1.x, p1.y);
-                ctx.lineTo(p2.x, p2.y);
-                ctx.stroke();
+                ctx.beginPath(); ctx.moveTo(p1.x, p1.y); ctx.lineTo(p2.x, p2.y); ctx.stroke();
             }
-
             ctx.setLineDash([]);
-
             if (hasDanger) {
                 alertBox.textContent = "🚨 RWR: 航線穿過禁飛/防空區！請新增航點繞路";
                 alertBox.className = "alert-box danger";
@@ -403,235 +343,14 @@
         function drawAttackAnimation() {
             const { path, progress, target } = attackAnimation;
             if (!path || path.length < 2) return;
-
             let totalSegs = path.length - 1;
             let currentFloatIndex = progress * totalSegs;
             let segIndex = Math.min(Math.floor(currentFloatIndex), totalSegs - 1);
             let t = currentFloatIndex - segIndex;
-
-            let p1 = path[segIndex];
-            let p2 = path[segIndex+1];
-
-            let currentX = p1.x + (p2.x - p1.x) * t;
-            let currentY = p1.y + (p2.y - p1.y) * t;
+            let p1 = path[segIndex], p2 = path[segIndex+1];
+            let currentX = p1.x + (p2.x - p1.x) * t, currentY = p1.y + (p2.y - p1.y) * t;
             let angle = Math.atan2(p2.y - p1.y, p2.x - p1.x);
 
             if (segIndex >= totalSegs - 1 && t > 0.8) {
                 target.destroyed = true;
                 ctx.fillStyle = "rgba(255, 120, 0, 0.9)";
-                ctx.beginPath();
-                ctx.arc(target.x, target.y, (14 + Math.random() * 6) / camera.zoom, 0, Math.PI * 2);
-                ctx.fill();
-            }
-
-            ctx.save();
-            ctx.translate(currentX, currentY);
-            ctx.rotate(angle);
-            ctx.fillStyle = "#00ff66";
-            ctx.beginPath();
-            ctx.moveTo(9 / camera.zoom, 0);
-            ctx.lineTo(-7 / camera.zoom, -5 / camera.zoom);
-            ctx.lineTo(-3 / camera.zoom, 0);
-            ctx.lineTo(-7 / camera.zoom, 5 / camera.zoom);
-            ctx.closePath();
-            ctx.fill();
-            ctx.restore();
-        }
-
-        function startAttackRun() {
-            if (!selectedTarget) return;
-
-            if (selectedWeapon === 'mav' && gameState.ammoMav <= 0) { alert("⚠️ AGM-65 彈藥耗盡！"); return; }
-            if (selectedWeapon === 'bomb' && gameState.ammoGbu <= 0) { alert("⚠️ GBU-12 彈藥耗盡！"); return; }
-
-            if (selectedWeapon === 'mav') gameState.ammoMav--;
-            if (selectedWeapon === 'bomb') gameState.ammoGbu--;
-            updateUIStats();
-
-            targetModal.classList.add('hidden');
-            alertBox.classList.add('hidden');
-
-            let fullPath = [mapData.ip, ...mapData.waypoints, selectedTarget, mapData.egress];
-            let startTime = null;
-            const duration = 4500;
-
-            attackAnimation = {
-                path: fullPath,
-                progress: 0,
-                target: selectedTarget
-            };
-
-            function step(timestamp) {
-                if (!startTime) startTime = timestamp;
-                const elapsed = timestamp - startTime;
-                attackAnimation.progress = Math.min(1, elapsed / duration);
-
-                drawMap();
-
-                if (attackAnimation.progress < 1) {
-                    requestAnimationFrame(step);
-                } else {
-                    attackAnimation = null;
-                    evaluateAttack(selectedTarget, selectedWeapon);
-                    drawMap();
-                }
-            }
-
-            requestAnimationFrame(step);
-        }
-
-        function evaluateAttack(tgt, weapon) {
-            let scoreAdd = 0;
-            let resultText = "";
-            let fullPath = [mapData.ip, ...mapData.waypoints, tgt, mapData.egress];
-            let hasDanger = false;
-            for (let i = 0; i < fullPath.length - 1; i++) {
-                if (checkSegmentIntersection(fullPath[i], fullPath[i+1])) hasDanger = true;
-            }
-
-            if (tgt.bestWeapon === weapon) {
-                scoreAdd = 150;
-                resultText = `🎯 【完美武器運用 (OPTIMAL ORDNANCE)】\n- 目標: ${tgt.code} (${tgt.name})\n- 雷射編碼 PRF ${tgt.prf} 鎖定成功！\n- 獲得分數: +150 分`;
-            } else {
-                scoreAdd = 60;
-                resultText = `⚠️ 【次佳武器配置 (SUBOPTIMAL)】\n- 目標: ${tgt.code} (${tgt.name})\n- 雖成功摧毀，但效率一般。\n- 獲得分數: +60 分`;
-            }
-
-            if (hasDanger) {
-                scoreAdd -= 50;
-                resultText += `\n🚨 【防空警報】航線穿過禁飛/防空區遭攔截！(-50 分)`;
-            } else {
-                scoreAdd += 60;
-                resultText += `\n🌟 【完美地形匿蹤獎勵】多航點規劃成功避開所有禁飛威脅！(+60 分)`;
-            }
-
-            gameState.score = Math.max(0, gameState.score + scoreAdd);
-            scoreDisplay.textContent = gameState.score;
-
-            const allDestroyed = mapData.targets.every(t => t.destroyed);
-            if (allDestroyed) {
-                if (gameState.wave < gameState.maxWaves) {
-                    gameState.wave++;
-                    resultText += `\n\n🌟 【WAVE ${gameState.wave-1} 圓滿達成】\n進入下一作戰區！`;
-                    gameState.ammoMav = Math.min(4, gameState.ammoMav + 2);
-                    gameState.ammoGbu = Math.min(3, gameState.ammoGbu + 1);
-                    generateCampaignWave();
-                    scoreClose.textContent = "進入下一波作戰 / NEXT WAVE";
-                } else {
-                    gameState.isGameOver = true;
-                    resultText += `\n\n🏆 【全戰役勝利 (CAMPAIGN COMPLETE)】\n總分: ${gameState.score}`;
-                    scoreClose.textContent = "重新開始新戰役 / NEW CAMPAIGN";
-                }
-            } else {
-                scoreClose.textContent = "確認 / CONTINUE";
-            }
-
-            scoreDesc.innerText = resultText;
-            scoreModal.classList.remove('hidden');
-        }
-
-        canvas.addEventListener('click', (e) => {
-            if (attackAnimation || !scoreModal.classList.contains('hidden')) return;
-            const rect = canvas.getBoundingClientRect();
-            const clickX = e.clientX - rect.left;
-            const clickY = e.clientY - rect.top;
-
-            const mapX = (clickX - canvas.width / 2 - camera.x) / camera.zoom;
-            const mapY = (clickY - canvas.height / 2 - camera.y) / camera.zoom;
-
-            if (currentTool === 'ip') {
-                mapData.ip.x = mapX;
-                mapData.ip.y = mapY;
-                setTool('target');
-                drawMap();
-                return;
-            }
-            if (currentTool === 'egress') {
-                mapData.egress.x = mapX;
-                mapData.egress.y = mapY;
-                setTool('target');
-                drawMap();
-                return;
-            }
-            if (currentTool === 'waypoint') {
-                mapData.waypoints.push({ x: mapX, y: mapY });
-                drawMap();
-                return;
-            }
-
-            let clicked = null;
-            mapData.targets.forEach(tgt => {
-                const dist = Math.hypot(tgt.x - mapX, tgt.y - mapY);
-                if (dist < 40 / camera.zoom) clicked = tgt;
-            });
-
-            if (clicked && !clicked.destroyed) {
-                selectedTarget = clicked;
-                showModal(clicked);
-                drawMap();
-            }
-        });
-
-        function showModal(tgt) {
-            modalTitle.textContent = `9-LINE BRIEFING: ${tgt.code}`;
-            tgpInfo.textContent = `FLIR/WH || TGP POINT TRK || PRF CODE: ${tgt.prf}`;
-            modalBody.innerHTML = `
-                <div><strong>1. Ingress IP:</strong> ${mapData.ip.name}</div>
-                <div><strong>2. Waypoints:</strong> ${mapData.waypoints.length} WP Active</div>
-                <div><strong>3. Target Elevation:</strong> ${tgt.elev}</div>
-                <div><strong>4. Target Description:</strong> ${tgt.name}</div>
-                <div><strong>5. Coordinates:</strong> ${tgt.grid}</div>
-                <div><strong>6. Laser Code:</strong> PRF ${tgt.prf}</div>
-                <div><strong>7. JTAC Contact:</strong> ${mapData.alphaTeam.name}</div>
-                <div><strong>8. Egress Point:</strong> ${mapData.egress.name}</div>
-            `;
-            targetModal.classList.remove('hidden');
-        }
-
-        modalClose.addEventListener('click', () => {
-            targetModal.classList.add('hidden');
-            selectedTarget = null;
-            drawMap();
-        });
-
-        document.querySelectorAll('.weapon-btn').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                document.querySelectorAll('.weapon-btn').forEach(b => b.classList.remove('selected'));
-                e.target.classList.add('selected');
-                selectedWeapon = e.target.getAttribute('data-weapon');
-            });
-        });
-
-        modalActionBtn.addEventListener('click', () => { startAttackRun(); });
-
-        scoreClose.addEventListener('click', () => {
-            scoreModal.classList.add('hidden');
-            selectedTarget = null;
-            if (gameState.isGameOver) {
-                gameState.isGameOver = false;
-                gameState.score = 0;
-                gameState.wave = 1;
-                gameState.ammoMav = 4;
-                gameState.ammoGbu = 2;
-                generateCampaignWave();
-            }
-            drawMap();
-        });
-
-        canvas.addEventListener('mousedown', (e) => { isDragging = true; startPan = { x: e.clientX - camera.x, y: e.clientY - camera.y }; });
-        window.addEventListener('mousemove', (e) => { if (isDragging) { camera.x = e.clientX - startPan.x; camera.y = e.clientY - startPan.y; drawMap(); } });
-        window.addEventListener('mouseup', () => isDragging = false);
-
-        canvas.addEventListener('touchstart', (e) => { if (e.touches.length === 1) { isDragging = true; startPan = { x: e.touches[0].clientX - camera.x, y: e.touches[0].clientY - camera.y }; } }, { passive: true });
-        canvas.addEventListener('touchmove', (e) => { if (isDragging && e.touches.length === 1) { camera.x = e.touches[0].clientX - startPan.x; camera.y = e.touches[0].clientY - startPan.y; drawMap(); } }, { passive: true });
-        canvas.addEventListener('touchend', () => isDragging = false);
-
-        document.getElementById('btn-zoom-in').addEventListener('click', () => { camera.zoom = Math.min(camera.maxZoom, camera.zoom + 0.2); drawMap(); });
-        document.getElementById('btn-zoom-out').addEventListener('click', () => { camera.zoom = Math.max(camera.minZoom, camera.zoom - 0.2); drawMap(); });
-        document.getElementById('btn-reset').addEventListener('click', () => { camera.x = 0; camera.y = 0; camera.zoom = 1; drawMap(); });
-
-        generateCampaignWave();
-        initCanvas();
-    </script>
-</body>
-</html>
