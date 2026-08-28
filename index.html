@@ -3,121 +3,79 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>A-10 CAS JTAC Tactical Simulator - Fix</title>
+    <title>A-10 CAS JTAC Tactical Simulator</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; user-select: none; -webkit-user-select: none; }
         body, html { width: 100%; height: 100%; overflow: hidden; background-color: #050b08; font-family: 'Courier New', Courier, monospace; color: #00ff66; }
-        #game-container { width: 100vw; height: 100vh; position: relative; display: block; }
-        #ui-header { position: absolute; top: 0; left: 0; width: 100%; display: flex; justify-content: space-around; align-items: center; height: 36px; background: #0a1610; border-bottom: 2px solid #005522; font-size: 11px; font-weight: bold; z-index: 10; }
+        #game-container { width: 100vw; height: 100vh; position: relative; background: #020604; }
+        
+        #ui-header { position: absolute; top: 0; left: 0; width: 100%; height: 40px; background: #0a1610; border-bottom: 2px solid #005522; display: flex; justify-content: space-around; align-items: center; font-size: 11px; font-weight: bold; z-index: 10; }
         .label { color: #00aa44; }
         .green { color: #00ff66; }
-        #canvas-wrapper { position: absolute; top: 36px; left: 0; right: 0; bottom: 0; background: #020604; overflow: hidden; }
+
+        #canvas-wrapper { position: absolute; top: 40px; left: 0; right: 0; bottom: 0; background: #020604; }
         canvas { display: block; width: 100%; height: 100%; }
+
         #map-controls { position: absolute; right: 10px; top: 10px; display: flex; flex-direction: column; gap: 6px; z-index: 5; }
-        #map-controls button { width: 40px; height: 40px; background: rgba(10, 22, 16, 0.85); border: 1px solid #00ff66; color: #00ff66; font-size: 16px; font-weight: bold; border-radius: 4px; cursor: pointer; }
-        #map-controls button:active { background: #00ff66; color: #000; }
+        #map-controls button { width: 42px; height: 42px; background: rgba(10, 22, 16, 0.9); border: 1px solid #00ff66; color: #00ff66; font-size: 16px; font-weight: bold; border-radius: 4px; cursor: pointer; }
+        
         .alert-box { position: absolute; top: 10px; left: 50%; transform: translateX(-50%); background: rgba(180, 0, 0, 0.9); color: #fff; border: 1px solid #ff4444; padding: 6px 12px; font-size: 11px; font-weight: bold; border-radius: 4px; z-index: 6; text-align: center; width: 85%; }
         .hidden { display: none !important; }
 
-        /* 9-Line 戰術簡報與武器選擇視窗 */
         #target-modal {
-            position: absolute;
-            bottom: 30px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 92%;
-            max-width: 380px;
-            background: rgba(8, 18, 12, 0.96);
-            border: 2px solid #00ff66;
-            border-radius: 8px;
-            padding: 10px;
-            box-shadow: 0 0 15px rgba(0, 255, 102, 0.3);
-            z-index: 20;
-            display: flex;
-            flex-direction: column;
-            gap: 6px;
-            max-height: 85vh;
-            overflow-y: auto;
+            position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%);
+            width: 92%; max-width: 380px; background: rgba(8, 18, 12, 0.96);
+            border: 2px solid #00ff66; border-radius: 8px; padding: 10px;
+            z-index: 20; display: flex; flex-direction: column; gap: 6px;
         }
         .modal-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #005522; padding-bottom: 4px; }
         .modal-title { color: #ffff00; font-weight: bold; font-size: 12px; }
-        .close-btn { background: none; border: none; color: #ff5555; font-size: 16px; font-weight: bold; cursor: pointer; padding: 0 5px; }
+        .close-btn { background: none; border: none; color: #ff5555; font-size: 16px; font-weight: bold; cursor: pointer; }
         .modal-body { font-size: 10px; line-height: 1.4; color: #00dd55; }
         .modal-body div { margin-bottom: 2px; }
-        
-        .weapon-select-section {
-            border-top: 1px dashed #005522;
-            padding-top: 4px;
-            margin-top: 2px;
-        }
+
+        .weapon-select-section { border-top: 1px dashed #005522; padding-top: 4px; margin-top: 2px; }
         .weapon-label { color: #ffff00; font-size: 10px; font-weight: bold; margin-bottom: 3px; }
         .weapon-options { display: flex; gap: 4px; }
         .weapon-btn {
-            flex: 1;
-            padding: 5px 2px;
-            background: #04120a;
-            border: 1px solid #00aa44;
-            color: #00aa44;
-            font-family: inherit;
-            font-size: 9px;
-            font-weight: bold;
-            border-radius: 3px;
-            cursor: pointer;
-            text-align: center;
+            flex: 1; padding: 6px 2px; background: #04120a; border: 1px solid #00aa44;
+            color: #00aa44; font-family: inherit; font-size: 9px; font-weight: bold; border-radius: 3px; text-align: center;
         }
-        .weapon-btn.selected {
-            background: #007733;
-            border-color: #00ff66;
-            color: #ffffff;
-            box-shadow: 0 0 5px rgba(0,255,102,0.5);
-        }
+        .weapon-btn.selected { background: #007733; border-color: #00ff66; color: #ffffff; }
 
-        .action-btn { width: 100%; padding: 8px; background: #007733; border: 1px solid #00ff66; color: #ffffff; font-family: inherit; font-weight: bold; font-size: 11px; border-radius: 4px; cursor: pointer; margin-top: 4px; }
-        .action-btn:active { background: #00ff66; color: #000; }
-        
-        /* 結算評價窗 */
+        .action-btn { width: 100%; padding: 8px; background: #007733; border: 1px solid #00ff66; color: #ffffff; font-family: inherit; font-weight: bold; font-size: 11px; border-radius: 4px; margin-top: 4px; }
+
         #score-modal {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            width: 85%;
-            max-width: 320px;
-            background: rgba(5, 15, 10, 0.98);
-            border: 2px solid #ffff00;
-            border-radius: 8px;
-            padding: 15px;
-            z-index: 30;
-            text-align: center;
-            box-shadow: 0 0 20px rgba(255,255,0,0.4);
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            width: 85%; max-width: 320px; background: rgba(5, 15, 10, 0.98);
+            border: 2px solid #ffff00; border-radius: 8px; padding: 15px; z-index: 30; text-align: center;
         }
         #score-title { color: #ffff00; font-size: 14px; font-weight: bold; margin-bottom: 8px; }
         #score-desc { color: #00ff66; font-size: 11px; line-height: 1.5; margin-bottom: 12px; text-align: left; }
-        .score-close-btn { padding: 6px 15px; background: #007733; border: 1px solid #ffff00; color: #ffff00; font-family: inherit; font-weight: bold; cursor: pointer; border-radius: 4px; }
+        .score-close-btn { padding: 6px 15px; background: #007733; border: 1px solid #ffff00; color: #ffff00; font-family: inherit; font-weight: bold; border-radius: 4px; }
     </style>
 </head>
 <body>
     <div id="game-container">
         <header id="ui-header">
-            <div class="status-box"><span class="label">JTAC</span> <span id="callsign">ALPHA-1</span></div>
-            <div class="status-box"><span class="label">A-10:</span> <span id="a10-status" class="green">INBOUND</span></div>
-            <div class="status-box"><span class="label">SCORE:</span> <span id="score-display" class="green">0</span></div>
+            <div><span class="label">JTAC</span> <span id="callsign">ALPHA-1</span></div>
+            <div><span class="label">A-10:</span> <span id="a10-status" class="green">INBOUND</span></div>
+            <div><span class="label">SCORE:</span> <span id="score-display" class="green">0</span></div>
         </header>
 
-        <main id="canvas-wrapper">
+        <div id="canvas-wrapper">
             <canvas id="tactical-map"></canvas>
             <div id="map-controls">
                 <button id="btn-zoom-in">+</button>
                 <button id="btn-zoom-out">-</button>
-                <button id="btn-reset">CENTER</button>
+                <button id="btn-reset">CEN</button>
             </div>
             <div id="danger-alert" class="alert-box hidden">⚠️ WARNING: FLIGHT PATH CROSSES SAM THREAT ZONE!</div>
-        </main>
+        </div>
 
-        <!-- 9-Line 簡報與武器選擇面板 -->
         <div id="target-modal" class="hidden">
             <div class="modal-header">
-                <span id="modal-title" class="modal-title">9-LINE BRIEFING: OBJ-01</span>
+                <span id="modal-title" class="modal-title">9-LINE BRIEFING</span>
                 <button id="modal-close" class="close-btn">✕</button>
             </div>
             <div id="modal-body" class="modal-body"></div>
@@ -134,10 +92,9 @@
             <button id="modal-action-btn" class="action-btn">► TRANSMIT 9-LINE & CLEARED HOT</button>
         </div>
 
-        <!-- 任務結算與評價面板 -->
         <div id="score-modal" class="hidden">
             <div id="score-title">ATTACK ASSESSMENT</div>
-            <div id="score-desc">評算內容...</div>
+            <div id="score-desc">評算內容</div>
             <button class="score-close-btn" id="score-close">確認 / CONTINUE</button>
         </div>
     </div>
@@ -166,30 +123,32 @@
         let totalScore = 0;
 
         const mapData = {
-            ip: { x: -200, y: -160, name: "IP DIXIE" },
-            egress: { x: 180, y: -60, name: "EGRESS NORTH" },
-            alphaTeam: { x: -140, y: 140, name: "ALPHA 1-1" },
+            ip: { x: -150, y: -140, name: "IP DIXIE" },
+            egress: { x: 150, y: -60, name: "EGRESS NORTH" },
+            alphaTeam: { x: -100, y: 100, name: "ALPHA 1-1" },
             samSites: [
-                { id: "SAM-1", x: 100, y: 120, radius: 100, name: "SAM-01 (SA-6)" },
-                { id: "SAM-2", x: 150, y: -180, radius: 110, name: "SAM-02 (ZSU-23)" }
+                { id: "SAM-1", x: 80, y: 100, radius: 90, name: "SAM-01 (SA-6)" },
+                { id: "SAM-2", x: 120, y: -150, radius: 90, name: "SAM-02 (ZSU-23)" }
             ],
             targets: [
-                { id: 1, code: "OBJ-01", name: "T-72 Tank Platoon", type: "ARMOR", x: -20, y: -30, elev: "450 FT", grid: "NV 341 882", bestWeapon: "mav", destroyed: false },
-                { id: 2, code: "OBJ-02", name: "Supply Convoy", type: "VEHICLE", x: 40, y: 80, elev: "410 FT", grid: "NV 348 871", bestWeapon: "gun", destroyed: false },
-                { id: 3, code: "OBJ-03", name: "Mortar Position", type: "INDIRECT FIRE", x: 110, y: -90, elev: "520 FT", grid: "NV 355 893", bestWeapon: "bomb", destroyed: false }
+                { id: 1, code: "OBJ-01", name: "T-72 Tank Platoon", type: "ARMOR", x: -20, y: -20, elev: "450 FT", grid: "NV 341 882", bestWeapon: "mav", destroyed: false },
+                { id: 2, code: "OBJ-02", name: "Supply Convoy", type: "VEHICLE", x: 50, y: 60, elev: "410 FT", grid: "NV 348 871", bestWeapon: "gun", destroyed: false },
+                { id: 3, code: "OBJ-03", name: "Mortar Position", type: "INDIRECT FIRE", x: 90, y: -70, elev: "520 FT", grid: "NV 355 893", bestWeapon: "bomb", destroyed: false }
             ]
         };
 
-        function resizeCanvas() {
-            const wrapper = document.getElementById('canvas-wrapper');
-            canvas.width = wrapper.clientWidth;
-            canvas.height = wrapper.clientHeight;
+        function initCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight - 40;
             drawMap();
         }
-        window.addEventListener('resize', resizeCanvas);
+
+        window.addEventListener('resize', initCanvas);
 
         function drawMap() {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = "#020604";
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
             ctx.save();
             ctx.translate(canvas.width / 2 + camera.x, canvas.height / 2 + camera.y);
             ctx.scale(camera.zoom, camera.zoom);
@@ -207,8 +166,8 @@
         function drawGrid() {
             ctx.strokeStyle = "#002211";
             ctx.lineWidth = 1 / camera.zoom;
-            const gridSize = 80;
-            const extent = 800;
+            const gridSize = 60;
+            const extent = 600;
             for (let x = -extent; x <= extent; x += gridSize) {
                 ctx.beginPath(); ctx.moveTo(x, -extent); ctx.lineTo(x, extent); ctx.stroke();
             }
@@ -221,7 +180,7 @@
             mapData.samSites.forEach(sam => {
                 ctx.beginPath();
                 ctx.arc(sam.x, sam.y, sam.radius, 0, Math.PI * 2);
-                ctx.fillStyle = "rgba(255, 0, 0, 0.12)";
+                ctx.fillStyle = "rgba(255, 0, 0, 0.15)";
                 ctx.fill();
                 ctx.strokeStyle = "rgba(255, 60, 60, 0.7)";
                 ctx.lineWidth = 1.5 / camera.zoom;
@@ -231,17 +190,17 @@
 
                 ctx.fillStyle = "#ff5555";
                 ctx.font = `${10 / camera.zoom}px Courier New`;
-                ctx.fillText(sam.name, sam.x - 40, sam.y + sam.radius + 12);
+                ctx.fillText(sam.name, sam.x - 35, sam.y + sam.radius + 12);
             });
         }
 
         function drawFriendly() {
             ctx.fillStyle = "#00ffff";
             ctx.beginPath();
-            ctx.arc(mapData.alphaTeam.x, mapData.alphaTeam.y, 6, 0, Math.PI * 2);
+            ctx.arc(mapData.alphaTeam.x, mapData.alphaTeam.y, 5, 0, Math.PI * 2);
             ctx.fill();
             ctx.font = `${10 / camera.zoom}px Courier New`;
-            ctx.fillText("▲ " + mapData.alphaTeam.name, mapData.alphaTeam.x + 10, mapData.alphaTeam.y + 3);
+            ctx.fillText("▲ " + mapData.alphaTeam.name, mapData.alphaTeam.x + 8, mapData.alphaTeam.y + 3);
         }
 
         function drawTargets() {
@@ -273,6 +232,7 @@
                 const dx = p2.x - p1.x;
                 const dy = p2.y - p1.y;
                 const len = Math.hypot(dx, dy);
+                if (len === 0) return;
                 const u = Math.max(0, Math.min(1, ((sam.x - p1.x) * dx + (sam.y - p1.y) * dy) / (len * len)));
                 const projX = p1.x + u * dx;
                 const projY = p1.y + u * dy;
@@ -287,8 +247,8 @@
 
             ctx.fillStyle = "#00ffff";
             ctx.font = `${10 / camera.zoom}px Courier New`;
-            ctx.fillText("● " + mapData.ip.name, mapData.ip.x - 30, mapData.ip.y - 10);
-            ctx.fillText("● " + mapData.egress.name, mapData.egress.x + 10, mapData.egress.y);
+            ctx.fillText("● " + mapData.ip.name, mapData.ip.x - 25, mapData.ip.y - 8);
+            ctx.fillText("● " + mapData.egress.name, mapData.egress.x + 8, mapData.egress.y);
 
             const isIngressDanger = checkSAMIntersection(mapData.ip, selectedTarget);
             const isEgressDanger = checkSAMIntersection(selectedTarget, mapData.egress);
@@ -415,7 +375,7 @@
             }
 
             if (isDanger) {
-                resultText += `\n⚠️ 警告: 航線穿過防空威脅區，承受額外戰術風險！`;
+                resultText += `\n⚠️ 警告: 航線穿過防空威脅區！`;
             }
 
             totalScore += scoreAdd;
@@ -436,7 +396,7 @@
             let clicked = null;
             mapData.targets.forEach(tgt => {
                 const dist = Math.hypot(tgt.x - mapX, tgt.y - mapY);
-                if (dist < 35 / camera.zoom) clicked = tgt;
+                if (dist < 40 / camera.zoom) clicked = tgt;
             });
 
             if (clicked && !clicked.destroyed) {
@@ -452,4 +412,30 @@
                 <div><strong>1. IP/Heading:</strong> DIXIE / 125°</div>
                 <div><strong>2. Distance:</strong> 4.2 NM</div>
                 <div><strong>3. Target Elevation:</strong> ${tgt.elev}</div>
-                <div><stron
+                <div><strong>4. Target Description:</strong> ${tgt.name} (${tgt.type})</div>
+                <div><strong>5. Target Location:</strong> ${tgt.grid}</div>
+                <div><strong>6. Marks:</strong> WP / IR Pointer</div>
+                <div><strong>7. Friendlies:</strong> ALPHA 1-1 (SOUTH 600m)</div>
+                <div><strong>8. Egress:</strong> NORTH via EGRESS</div>
+            `;
+            targetModal.classList.remove('hidden');
+        }
+
+        modalClose.addEventListener('click', () => {
+            targetModal.classList.add('hidden');
+        });
+
+        document.querySelectorAll('.weapon-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                document.querySelectorAll('.weapon-btn').forEach(b => b.classList.remove('selected'));
+                e.target.classList.add('selected');
+                selectedWeapon = e.target.getAttribute('data-weapon');
+            });
+        });
+
+        modalActionBtn.addEventListener('click', () => {
+            startAttackRun();
+        });
+
+        scoreClose.addEventListener('
+                                    
