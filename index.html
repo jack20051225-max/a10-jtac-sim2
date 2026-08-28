@@ -25,13 +25,12 @@
         #map-controls { position: absolute; right: 8px; top: 8px; display: flex; flex-direction: column; gap: 4px; z-index: 5; }
         #map-controls button { width: 32px; height: 32px; background: rgba(6, 16, 10, 0.9); border: 1px solid #00ff66; color: #00ff66; font-size: 13px; font-weight: bold; border-radius: 4px; cursor: pointer; }
         
-        .alert-box { position: absolute; top: 8px; left: 50%; transform: translateX(-50%); background: rgba(180, 0, 0, 0.95); color: #fff; border: 1px solid #ff0000; padding: 3px 6px; font-size: 8px; font-weight: bold; border-radius: 3px; z-index: 6; text-align: center; width: 50%; pointer-events: none; }
+        .alert-box { position: absolute; top: 8px; left: 50%; transform: translateX(-50%); background: rgba(180, 0, 0, 0.95); color: #fff; border: 1px solid #ff0000; padding: 3px 6px; font-size: 8px; font-weight: bold; border-radius: 3px; z-index: 6; text-align: center; width: 52%; pointer-events: none; }
         .alert-box.danger { animation: flash 0.8s infinite; }
         .alert-box.safe { background: rgba(0, 100, 50, 0.95); border-color: #00ff66; }
         @keyframes flash { 0% { opacity: 1; } 50% { opacity: 0.3; } 100% { opacity: 1; } }
         .hidden { display: none !important; }
 
-        /* 將 9-Line 整合至畫面上方中央，避免擋住下方地圖與按鈕 */
         #target-modal { position: absolute; top: 42px; left: 50%; transform: translateX(-50%); width: 92%; max-width: 420px; background: rgba(2, 10, 5, 0.95); border: 1.5px solid #00ff66; border-radius: 5px; padding: 6px; z-index: 20; display: flex; flex-direction: column; gap: 4px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.8); }
         .modal-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #004422; padding-bottom: 2px; }
         .modal-title { color: #ffff00; font-weight: bold; font-size: 9.5px; }
@@ -56,7 +55,7 @@
 <body>
     <div id="game-container">
         <header id="ui-header">
-            <div><span class="label">VER:</span> <span id="ver-display" class="yellow">v1.7</span></div>
+            <div><span class="label">VER:</span> <span id="ver-display" class="yellow">v1.8</span></div>
             <div><span class="label">WAVE:</span> <span id="wave-display" class="green">1/3</span></div>
             <div><span class="label">MAV:</span> <span id="mav-count" class="green">4</span> | <span class="label">GBU:</span> <span id="gbu-count" class="green">2</span></div>
             <div><span class="label">SCORE:</span> <span id="score-display" class="green">0</span></div>
@@ -78,7 +77,7 @@
                 <button id="btn-zoom-out">-</button>
                 <button id="btn-reset">CEN</button>
             </div>
-            <div id="danger-alert" class="alert-box hidden">🚨 RWR: 航線穿過防空區！</div>
+            <div id="danger-alert" class="alert-box hidden">🚨 航線安全檢查中...</div>
         </div>
 
         <div id="target-modal" class="hidden">
@@ -152,43 +151,72 @@
         let gameState = { score: 0, wave: 1, maxWaves: 3, ammoMav: 4, ammoGbu: 2, isGameOver: false };
 
         let mapData = {
-            ip: { x: -180, y: 120, name: "IP DIXIE" },
-            egress: { x: 180, y: 120, name: "EGRESS NORTH" },
+            ip: { x: -180, y: 130, name: "IP BAKER" },
+            egress: { x: 180, y: 130, name: "EGRESS ALPHA" },
             waypoints: [],
-            alphaTeam: { x: -120, y: 60, name: "ALPHA 1-1" },
+            alphaTeam: { x: -100, y: 80, name: "ALPHA 1-1" },
             noFlyZones: [], 
             targets: []
         };
 
+        function isInsideNoFlyZone(x, y, buffer = 15) {
+            for (let nfz of mapData.noFlyZones) {
+                if (Math.hypot(nfz.x - x, nfz.y - y) < (nfz.radius + buffer)) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
         function generateCampaignWave() {
-            mapData.ip = { x: -180, y: 130, name: "IP BAKER" };
-            mapData.egress = { x: 180, y: 130, name: "EGRESS ALPHA" };
-            mapData.waypoints = [];
-            mapData.alphaTeam = { x: -100, y: 80, name: "ALPHA 1-1" };
+            let validMap = false;
+            let attempts = 0;
 
-            mapData.noFlyZones = [
-                { x: 0, y: -110, radius: 65, name: "RESTRICTED PEAKS NORTH" },
-                { x: -130, y: -20, radius: 55, name: "WESTERN HIGHWAY BLOCK" },
-                { x: 130, y: -20, radius: 55, name: "EASTERN RIDGE" }
-            ];
+            while (!validMap && attempts < 50) {
+                attempts++;
+                mapData.ip = { x: -180, y: 130, name: "IP BAKER" };
+                mapData.egress = { x: 180, y: 130, name: "EGRESS ALPHA" };
+                mapData.waypoints = [];
+                mapData.alphaTeam = { x: -100, y: 80, name: "ALPHA 1-1" };
 
-            mapData.targets = [];
-            const tgtPool = [
-                { name: "T-80BV Heavy Armor", type: "ARMOR", best: "mav", elev: "480 FT", prf: "1688" },
-                { name: "BMP-3 Mechanized Infantry", type: "APC", best: "gun", elev: "410 FT", prf: "1689" },
-                { name: "2S19 Msta Howitzer Battery", type: "ARTILLERY", best: "bomb", elev: "530 FT", prf: "1690" },
-                { name: "Radar Station & Comms", type: "RADAR", best: "bomb", elev: "610 FT", prf: "1691" }
-            ];
+                mapData.noFlyZones = [
+                    { x: (Math.random() - 0.5) * 30, y: -110 + (Math.random() - 0.5) * 20, radius: 60, name: "RESTRICTED PEAKS NORTH" },
+                    { x: -130 + (Math.random() - 0.5) * 20, y: -20 + (Math.random() - 0.5) * 20, radius: 50, name: "WESTERN HIGHWAY BLOCK" },
+                    { x: 130 + (Math.random() - 0.5) * 20, y: -20 + (Math.random() - 0.5) * 20, radius: 50, name: "EASTERN RIDGE" }
+                ];
 
-            const targetCount = 2 + gameState.wave;
-            for (let i = 0; i < targetCount; i++) {
-                let tDef = tgtPool[i % tgtPool.length];
-                mapData.targets.push({
-                    id: i + 1, code: `OBJ-0${i+1}`, name: tDef.name, type: tDef.type,
-                    x: (i * 45) - ((targetCount - 1) * 22.5), y: (i % 2) * 20 - 10,
-                    elev: tDef.elev, grid: `MGRS 38T LF ${420+i} ${190+i}`,
-                    bestWeapon: tDef.best, prf: tDef.prf, destroyed: false
-                });
+                mapData.targets = [];
+                const tgtPool = [
+                    { name: "T-80BV Heavy Armor", type: "ARMOR", best: "mav", elev: "480 FT", prf: "1688" },
+                    { name: "BMP-3 Mechanized Infantry", type: "APC", best: "gun", elev: "410 FT", prf: "1689" },
+                    { name: "2S19 Msta Howitzer Battery", type: "ARTILLERY", best: "bomb", elev: "530 FT", prf: "1690" },
+                    { name: "Radar Station & Comms", type: "RADAR", best: "bomb", elev: "610 FT", prf: "1691" }
+                ];
+
+                const targetCount = 2 + gameState.wave;
+                let allTargetsValid = true;
+
+                for (let i = 0; i < targetCount; i++) {
+                    let tDef = tgtPool[i % tgtPool.length];
+                    let tx = (i * 50) - ((targetCount - 1) * 25) + (Math.random() - 0.5) * 20;
+                    let ty = ((i % 2) * 25 - 5) + (Math.random() - 0.5) * 15;
+
+                    if (isInsideNoFlyZone(tx, ty, 20)) {
+                        allTargetsValid = false;
+                        break;
+                    }
+
+                    mapData.targets.push({
+                        id: i + 1, code: `OBJ-0${i+1}`, name: tDef.name, type: tDef.type,
+                        x: tx, y: ty,
+                        elev: tDef.elev, grid: `MGRS 38T LF ${420+i} ${190+i}`,
+                        bestWeapon: tDef.best, prf: tDef.prf, destroyed: false
+                    });
+                }
+
+                if (allTargetsValid && mapData.targets.length === targetCount) {
+                    validMap = true;
+                }
             }
             updateUIStats();
         }
@@ -209,7 +237,6 @@
         }
 
         window.addEventListener('resize', initCanvas);
-
         function drawMap() {
             ctx.fillStyle = "#010302";
             ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -302,26 +329,54 @@
             return intersects;
         }
 
+        function checkSharpTurns(path) {
+            let hasSharpTurn = false;
+            for (let i = 0; i < path.length - 2; i++) {
+                let p1 = path[i], p2 = path[i+1], p3 = path[i+2];
+                let v1x = p1.x - p2.x, v1y = p1.y - p2.y;
+                let v2x = p3.x - p2.x, v2y = p3.y - p2.y;
+                let dot = v1x * v2x + v1y * v2y;
+                let len1 = Math.hypot(v1x, v1y);
+                let len2 = Math.hypot(v2x, v2y);
+                if (len1 === 0 || len2 === 0) continue;
+                let cosTheta = Math.max(-1, Math.min(1, dot / (len1 * len2)));
+                let angleDeg = Math.acos(cosTheta) * (180 / Math.PI);
+                if (angleDeg < 45) {
+                    hasSharpTurn = true;
+                }
+            }
+            return hasSharpTurn;
+        }
+
         function drawFlightPath() {
             if (!selectedTarget) { alertBox.classList.add('hidden'); return; }
             let fullPath = [mapData.ip, ...mapData.waypoints, selectedTarget, mapData.egress];
             let hasDanger = false;
+            for (let i = 0; i < fullPath.length - 1; i++) {
+                if (checkSegmentIntersection(fullPath[i], fullPath[i+1])) hasDanger = true;
+            }
+            let hasSharp = checkSharpTurns(fullPath);
+
             ctx.lineWidth = 2 / camera.zoom;
             ctx.setLineDash([5, 3]);
             for (let i = 0; i < fullPath.length - 1; i++) {
                 let p1 = fullPath[i], p2 = fullPath[i+1];
                 let segmentDanger = checkSegmentIntersection(p1, p2);
-                if (segmentDanger) hasDanger = true;
-                ctx.strokeStyle = segmentDanger ? "#ff3333" : "#00ffcc";
+                ctx.strokeStyle = segmentDanger ? "#ff3333" : (hasSharp ? "#ffff00" : "#00ffcc");
                 ctx.beginPath(); ctx.moveTo(p1.x, p1.y); ctx.lineTo(p2.x, p2.y); ctx.stroke();
             }
             ctx.setLineDash([]);
+
             if (hasDanger) {
-                alertBox.textContent = "🚨 RWR: 航線穿過防空區！請新增航點繞路";
+                alertBox.textContent = "🚨 RWR警報：航線穿過防空禁飛區！";
+                alertBox.className = "alert-box danger";
+                alertBox.classList.remove('hidden');
+            } else if (hasSharp) {
+                alertBox.textContent = "⚠️ 警告：航線轉彎過銳（夾角<45°）！";
                 alertBox.className = "alert-box danger";
                 alertBox.classList.remove('hidden');
             } else {
-                alertBox.textContent = "✅ 戰術航線安全：成功避開威脅";
+                alertBox.textContent = "✅ 戰術航線安全：無威脅且轉彎順暢";
                 alertBox.className = "alert-box safe";
                 alertBox.classList.remove('hidden');
             }
@@ -395,6 +450,7 @@
             for (let i = 0; i < fullPath.length - 1; i++) {
                 if (checkSegmentIntersection(fullPath[i], fullPath[i+1])) hasDanger = true;
             }
+            let hasSharp = checkSharpTurns(fullPath);
 
             if (tgt.bestWeapon === weapon) {
                 scoreAdd = 150;
@@ -407,9 +463,12 @@
             if (hasDanger) {
                 scoreAdd -= 50;
                 resultText += `\n🚨 【防空警報】航線穿過禁飛區！(-50分)`;
+            } else if (hasSharp) {
+                scoreAdd -= 30;
+                resultText += `\n⚠️ 【急轉彎警告】航線夾角過銳！(-30分)`;
             } else {
                 scoreAdd += 60;
-                resultText += `\n🌟 【地形匿蹤獎勵】成功避開威脅！(+60分)`;
+                resultText += `\n🌟 【流暢戰術航線】完美匿蹤與飛行品質！(+60分)`;
             }
 
             gameState.score = Math.max(0, gameState.score + scoreAdd);
