@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>A-10 CAS JTAC Tactical Simulator</title>
+    <title>A-10 CAS JTAC Tactical Simulator - 9-Line & Weapons</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; user-select: none; -webkit-user-select: none; }
         body, html { width: 100%; height: 100%; overflow: hidden; background-color: #050b08; font-family: 'Courier New', Courier, monospace; color: #00ff66; }
@@ -19,15 +19,15 @@
         .alert-box { position: absolute; top: 10px; left: 50%; transform: translateX(-50%); background: rgba(180, 0, 0, 0.9); color: #fff; border: 1px solid #ff4444; padding: 6px 12px; font-size: 11px; font-weight: bold; border-radius: 4px; z-index: 6; text-align: center; width: 85%; }
         .hidden { display: none !important; }
 
-        /* 懸浮目標資訊視窗 */
+        /* 9-Line 戰術簡報與武器選擇視窗 (手機防裁切優化版) */
         #target-modal {
             position: absolute;
-            bottom: 40px;
+            bottom: 30px;
             left: 50%;
             transform: translateX(-50%);
-            width: 88%;
-            max-width: 360px;
-            background: rgba(8, 18, 12, 0.95);
+            width: 92%;
+            max-width: 380px;
+            background: rgba(8, 18, 12, 0.96);
             border: 2px solid #00ff66;
             border-radius: 8px;
             padding: 10px;
@@ -36,14 +36,64 @@
             display: flex;
             flex-direction: column;
             gap: 6px;
+            max-height: 85vh;
+            overflow-y: auto;
         }
         .modal-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #005522; padding-bottom: 4px; }
         .modal-title { color: #ffff00; font-weight: bold; font-size: 12px; }
         .close-btn { background: none; border: none; color: #ff5555; font-size: 16px; font-weight: bold; cursor: pointer; padding: 0 5px; }
         .modal-body { font-size: 10px; line-height: 1.4; color: #00dd55; }
         .modal-body div { margin-bottom: 2px; }
-        .action-btn { width: 100%; padding: 8px; background: #007733; border: 1px solid #00ff66; color: #ffffff; font-family: inherit; font-weight: bold; font-size: 12px; border-radius: 4px; cursor: pointer; margin-top: 2px; }
+        
+        .weapon-select-section {
+            border-top: 1px dashed #005522;
+            padding-top: 4px;
+            margin-top: 2px;
+        }
+        .weapon-label { color: #ffff00; font-size: 10px; font-weight: bold; margin-bottom: 3px; }
+        .weapon-options { display: flex; gap: 4px; }
+        .weapon-btn {
+            flex: 1;
+            padding: 5px 2px;
+            background: #04120a;
+            border: 1px solid #00aa44;
+            color: #00aa44;
+            font-family: inherit;
+            font-size: 9px;
+            font-weight: bold;
+            border-radius: 3px;
+            cursor: pointer;
+            text-align: center;
+        }
+        .weapon-btn.selected {
+            background: #007733;
+            border-color: #00ff66;
+            color: #ffffff;
+            box-shadow: 0 0 5px rgba(0,255,102,0.5);
+        }
+
+        .action-btn { width: 100%; padding: 8px; background: #007733; border: 1px solid #00ff66; color: #ffffff; font-family: inherit; font-weight: bold; font-size: 11px; border-radius: 4px; cursor: pointer; margin-top: 4px; }
         .action-btn:active { background: #00ff66; color: #000; }
+        
+        /* 結算評價窗 */
+        #score-modal {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 85%;
+            max-width: 320px;
+            background: rgba(5, 15, 10, 0.98);
+            border: 2px solid #ffff00;
+            border-radius: 8px;
+            padding: 15px;
+            z-index: 30;
+            text-align: center;
+            box-shadow: 0 0 20px rgba(255,255,0,0.4);
+        }
+        #score-title { color: #ffff00; font-size: 14px; font-weight: bold; margin-bottom: 8px; }
+        #score-desc { color: #00ff66; font-size: 11px; line-height: 1.5; margin-bottom: 12px; text-align: left; }
+        .score-close-btn { padding: 6px 15px; background: #007733; border: 1px solid #ffff00; color: #ffff00; font-family: inherit; font-weight: bold; cursor: pointer; border-radius: 4px; }
     </style>
 </head>
 <body>
@@ -51,7 +101,7 @@
         <header id="ui-header">
             <div class="status-box"><span class="label">JTAC</span> <span id="callsign">ALPHA-1</span></div>
             <div class="status-box"><span class="label">A-10:</span> <span id="a10-status" class="green">INBOUND</span></div>
-            <div class="status-box"><span class="label">GRID:</span> <span id="current-grid">NV 341 882</span></div>
+            <div class="status-box"><span class="label">SCORE:</span> <span id="score-display" class="green">0</span></div>
         </header>
 
         <main id="canvas-wrapper">
@@ -64,13 +114,31 @@
             <div id="danger-alert" class="alert-box hidden">⚠️ WARNING: FLIGHT PATH CROSSES SAM THREAT ZONE!</div>
         </main>
 
+        <!-- 9-Line 簡報與武器選擇面板 -->
         <div id="target-modal" class="hidden">
             <div class="modal-header">
-                <span id="modal-title" class="modal-title">TARGET LOCKED: OBJ-01</span>
+                <span id="modal-title" class="modal-title">9-LINE BRIEFING: OBJ-01</span>
                 <button id="modal-close" class="close-btn">✕</button>
             </div>
             <div id="modal-body" class="modal-body"></div>
-            <button id="modal-action-btn" class="action-btn">► TRANSMIT 9-LINE TO HOG-1</button>
+            
+            <div class="weapon-select-section">
+                <div class="weapon-label">8. SELECT WEAPON / 武器選擇:</div>
+                <div class="weapon-options">
+                    <button class="weapon-btn selected" data-weapon="mav">AGM-65 小牛</button>
+                    <button class="weapon-btn" data-weapon="bomb">GBU-12 炸彈</button>
+                    <button class="weapon-btn" data-weapon="gun">30mm 機砲</button>
+                </div>
+            </div>
+
+            <button id="modal-action-btn" class="action-btn">► TRANSMIT 9-LINE & CLEARED HOT</button>
+        </div>
+
+        <!-- 任務結算與評價面板 -->
+        <div id="score-modal" class="hidden">
+            <div id="score-title">ATTACK ASSESSMENT</div>
+            <div id="score-desc">評算內容...</div>
+            <button class="score-close-btn" id="score-close">確認 / CONTINUE</button>
         </div>
     </div>
 
@@ -84,12 +152,18 @@
         const modalClose = document.getElementById('modal-close');
         const modalActionBtn = document.getElementById('modal-action-btn');
         const a10StatusEl = document.getElementById('a10-status');
+        const scoreDisplay = document.getElementById('score-display');
+        const scoreModal = document.getElementById('score-modal');
+        const scoreDesc = document.getElementById('score-desc');
+        const scoreClose = document.getElementById('score-close');
 
         let camera = { x: 0, y: 0, zoom: 1, minZoom: 0.5, maxZoom: 2.5 };
         let isDragging = false;
         let startPan = { x: 0, y: 0 };
         let selectedTarget = null;
+        let selectedWeapon = 'mav'; // 預設小牛
         let attackAnimation = null;
+        let totalScore = 0;
 
         const mapData = {
             ip: { x: -200, y: -160, name: "IP DIXIE" },
@@ -100,9 +174,9 @@
                 { id: "SAM-2", x: 150, y: -180, radius: 110, name: "SAM-02 (ZSU-23)" }
             ],
             targets: [
-                { id: 1, code: "OBJ-01", name: "T-72 Tank Platoon", type: "ARMOR", x: -20, y: -30, elev: "450 FT", grid: "NV 341 882", destroyed: false },
-                { id: 2, code: "OBJ-02", name: "Supply Convoy", type: "VEHICLE", x: 40, y: 80, elev: "410 FT", grid: "NV 348 871", destroyed: false },
-                { id: 3, code: "OBJ-03", name: "Mortar Position", type: "INDIRECT FIRE", x: 110, y: -90, elev: "520 FT", grid: "NV 355 893", destroyed: false }
+                { id: 1, code: "OBJ-01", name: "T-72 Tank Platoon", type: "ARMOR", x: -20, y: -30, elev: "450 FT", grid: "NV 341 882", bestWeapon: "mav", destroyed: false },
+                { id: 2, code: "OBJ-02", name: "Supply Convoy", type: "VEHICLE", x: 40, y: 80, elev: "410 FT", grid: "NV 348 871", bestWeapon: "gun", destroyed: false },
+                { id: 3, code: "OBJ-03", name: "Mortar Position", type: "INDIRECT FIRE", x: 110, y: -90, elev: "520 FT", grid: "NV 355 893", bestWeapon: "bomb", destroyed: false }
             ]
         };
 
@@ -318,6 +392,9 @@
                     attackAnimation = null;
                     a10StatusEl.textContent = "MISSION COMPLETE";
                     a10StatusEl.className = "green";
+                    
+                    // 檢查武器適配性給予分數評價
+                    evaluateAttack(selectedTarget, selectedWeapon);
                     drawMap();
                 }
             }
@@ -325,8 +402,31 @@
             requestAnimationFrame(step);
         }
 
+        function evaluateAttack(tgt, weapon) {
+            let scoreAdd = 0;
+            let resultText = "";
+            const isDanger = checkSAMIntersection(mapData.ip, tgt) || checkSAMIntersection(tgt, mapData.egress);
+
+            if (tgt.bestWeapon === weapon) {
+                scoreAdd = 100;
+                resultText = `✅ 【完美戰術執行 (EXCELLENT)】\n- 目標: ${tgt.code} (${tgt.name})\n- 武器選用: 符合目標特性最佳解！\n- 獲得分數: +100 分`;
+            } else {
+                scoreAdd = 40;
+                resultText = `⚠️ 【武器配置次佳 (SUBOPTIMAL)】\n- 目標: ${tgt.code} (${tgt.name})\n- 武器選用: 雖成功摧毀，但彈藥效率不佳。\n- 獲得分數: +40 分`;
+            }
+
+            if (isDanger) {
+                resultText += `\n⚠️ 警告: 航線穿過防空威脅區，承受額外戰術風險！`;
+            }
+
+            totalScore += scoreAdd;
+            scoreDisplay.textContent = totalScore;
+            scoreDesc.innerText = resultText;
+            scoreModal.classList.remove('hidden');
+        }
+
         canvas.addEventListener('click', (e) => {
-            if (attackAnimation) return;
+            if (attackAnimation || !scoreModal.classList.contains('hidden')) return;
             const rect = canvas.getBoundingClientRect();
             const clickX = e.clientX - rect.left;
             const clickY = e.clientY - rect.top;
@@ -348,38 +448,9 @@
         });
 
         function showModal(tgt) {
-            modalTitle.textContent = `TARGET LOCKED: ${tgt.code}`;
+            modalTitle.textContent = `9-LINE BRIEFING: ${tgt.code}`;
             modalBody.innerHTML = `
-                <div><strong>1-3. IP/Hdg/Dist:</strong> DIXIE / 125° / 4.2 NM</div>
-                <div><strong>4. ELEVATION:</strong> ${tgt.elev}</div>
-                <div><strong>5. TARGET:</strong> ${tgt.name} (${tgt.type})</div>
-                <div><strong>6. LOCATION:</strong> ${tgt.grid}</div>
-                <div><strong>8. FRIENDLIES:</strong> ALPHA 1-1 (SOUTH 600m)</div>
-            `;
-            targetModal.classList.remove('hidden');
-        }
-
-        modalClose.addEventListener('click', () => {
-            targetModal.classList.add('hidden');
-        });
-
-        modalActionBtn.addEventListener('click', () => {
-            startAttackRun();
-        });
-
-        canvas.addEventListener('mousedown', (e) => { isDragging = true; startPan = { x: e.clientX - camera.x, y: e.clientY - camera.y }; });
-        window.addEventListener('mousemove', (e) => { if (isDragging) { camera.x = e.clientX - startPan.x; camera.y = e.clientY - startPan.y; drawMap(); } });
-        window.addEventListener('mouseup', () => isDragging = false);
-
-        canvas.addEventListener('touchstart', (e) => { if (e.touches.length === 1) { isDragging = true; startPan = { x: e.touches[0].clientX - camera.x, y: e.touches[0].clientY - camera.y }; } }, { passive: true });
-        canvas.addEventListener('touchmove', (e) => { if (isDragging && e.touches.length === 1) { camera.x = e.touches[0].clientX - startPan.x; camera.y = e.touches[0].clientY - startPan.y; drawMap(); } }, { passive: true });
-        canvas.addEventListener('touchend', () => isDragging = false);
-
-        document.getElementById('btn-zoom-in').addEventListener('click', () => { camera.zoom = Math.min(camera.maxZoom, camera.zoom + 0.2); drawMap(); });
-        document.getElementById('btn-zoom-out').addEventListener('click', () => { camera.zoom = Math.max(camera.minZoom, camera.zoom - 0.2); drawMap(); });
-        document.getElementById('btn-reset').addEventListener('click', () => { camera.x = 0; camera.y = 0; camera.zoom = 1; drawMap(); });
-
-        resizeCanvas();
-    </script>
-</body>
-</html>
+                <div><strong>1. IP/Heading:</strong> DIXIE / 125°</div>
+                <div><strong>2. Distance:</strong> 4.2 NM</div>
+                <div><strong>3. Target Elevation:</strong> ${tgt.elev}</div>
+                <div><str
