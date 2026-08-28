@@ -3,85 +3,102 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>A-10 CAS TGP & Threat Tactical Simulator</title>
+    <title>A-10C FAC(A) Tactical Route Planner</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; user-select: none; -webkit-user-select: none; }
-        body, html { width: 100%; height: 100%; overflow: hidden; background-color: #030805; font-family: 'Courier New', Courier, monospace; color: #00ff66; }
-        #game-container { width: 100vw; height: 100vh; position: relative; background: #010402; }
+        body, html { width: 100%; height: 100%; overflow: hidden; background-color: #020503; font-family: 'Courier New', Courier, monospace; color: #00ff66; }
+        #game-container { width: 100vw; height: 100vh; position: relative; background: #010302; }
         
-        #ui-header { position: absolute; top: 0; left: 0; width: 100%; height: 45px; background: #07120c; border-bottom: 2px solid #004422; display: flex; justify-content: space-around; align-items: center; font-size: 11px; font-weight: bold; z-index: 10; }
+        #ui-header { position: absolute; top: 0; left: 0; width: 100%; height: 45px; background: #06100a; border-bottom: 2px solid #004422; display: flex; justify-content: space-around; align-items: center; font-size: 10px; font-weight: bold; z-index: 10; }
         .label { color: #008844; }
         .green { color: #00ff66; }
         .yellow { color: #ffff00; }
-        .red { color: #ff3333; }
+        .red { color: #ff4444; }
 
-        #canvas-wrapper { position: absolute; top: 45px; left: 0; right: 0; bottom: 0; background: #010402; }
+        #canvas-wrapper { position: absolute; top: 45px; left: 0; right: 0; bottom: 0; background: #010302; }
         canvas { display: block; width: 100%; height: 100%; }
 
+        /* 戰術工具列：切換點擊目標或規劃航線 */
+        #tactical-toolbar {
+            position: absolute; top: 10px; left: 10px; display: flex; flex-direction: column; gap: 5px; z-index: 5;
+        }
+        .tool-btn {
+            padding: 6px 10px; background: rgba(6, 16, 10, 0.95); border: 1px solid #008844;
+            color: #008844; font-family: inherit; font-size: 9px; font-weight: bold; border-radius: 4px; cursor: pointer; text-align: left;
+        }
+        .tool-btn.active { border-color: #00ff66; color: #00ff66; background: rgba(0, 85, 34, 0.6); box-shadow: 0 0 8px rgba(0,255,102,0.4); }
+
         #map-controls { position: absolute; right: 10px; top: 10px; display: flex; flex-direction: column; gap: 6px; z-index: 5; }
-        #map-controls button { width: 42px; height: 42px; background: rgba(7, 18, 12, 0.9); border: 1px solid #00ff66; color: #00ff66; font-size: 16px; font-weight: bold; border-radius: 4px; cursor: pointer; }
+        #map-controls button { width: 42px; height: 42px; background: rgba(6, 16, 10, 0.9); border: 1px solid #00ff66; color: #00ff66; font-size: 16px; font-weight: bold; border-radius: 4px; cursor: pointer; }
         
-        .alert-box { position: absolute; top: 12px; left: 50%; transform: translateX(-50%); background: rgba(200, 0, 0, 0.95); color: #fff; border: 1px solid #ff0000; padding: 6px 14px; font-size: 11px; font-weight: bold; border-radius: 4px; z-index: 6; text-align: center; width: 85%; animation: flash 1s infinite; }
-        @keyframes flash { 0% { opacity: 1; } 50% { opacity: 0.4; } 100% { opacity: 1; } }
+        .alert-box { position: absolute; top: 10px; left: 50%; transform: translateX(-50%); background: rgba(180, 0, 0, 0.95); color: #fff; border: 1px solid #ff0000; padding: 6px 12px; font-size: 10px; font-weight: bold; border-radius: 4px; z-index: 6; text-align: center; width: 75%; pointer-events: none; }
+        .alert-box.danger { animation: flash 0.8s infinite; }
+        .alert-box.safe { background: rgba(0, 100, 50, 0.95); border-color: #00ff66; }
+        @keyframes flash { 0% { opacity: 1; } 50% { opacity: 0.3; } 100% { opacity: 1; } }
         .hidden { display: none !important; }
 
-        /* TGP 擬真瞄準與 9-Line 互動視窗 */
         #target-modal {
-            position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%);
-            width: 94%; max-width: 400px; background: rgba(5, 14, 9, 0.98);
-            border: 2px solid #00ff66; border-radius: 6px; padding: 12px;
-            z-index: 20; display: flex; flex-direction: column; gap: 8px;
-            box-shadow: 0 0 15px rgba(0, 255, 102, 0.2);
+            position: absolute; bottom: 15px; left: 50%; transform: translateX(-50%);
+            width: 95%; max-width: 410px; background: rgba(4, 12, 7, 0.98);
+            border: 2px solid #00ff66; border-radius: 6px; padding: 10px;
+            z-index: 20; display: flex; flex-direction: column; gap: 6px;
+            box-shadow: 0 0 15px rgba(0, 255, 102, 0.3);
         }
         .modal-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #004422; padding-bottom: 4px; }
-        .modal-title { color: #ffff00; font-weight: bold; font-size: 12px; letter-spacing: 1px; }
+        .modal-title { color: #ffff00; font-weight: bold; font-size: 11px; }
         .close-btn { background: none; border: none; color: #ff5555; font-size: 16px; font-weight: bold; cursor: pointer; }
         
-        .tgp-preview { width: 100%; height: 110px; background: #000; border: 1px solid #005522; position: relative; overflow: hidden; display: flex; justify-content: center; align-items: center; }
-        .tgp-reticle { position: absolute; width: 40px; height: 40px; border: 1px dashed #00ff66; border-radius: 50%; }
-        .tgp-text { position: absolute; bottom: 4px; left: 6px; font-size: 9px; color: #00ff66; background: rgba(0,0,0,0.7); padding: 2px; }
+        .tgp-preview { width: 100%; height: 90px; background: #000; border: 1px solid #005522; position: relative; overflow: hidden; display: flex; justify-content: center; align-items: center; }
+        .tgp-reticle { position: absolute; width: 36px; height: 36px; border: 1px dashed #00ff66; border-radius: 50%; }
+        .tgp-text { position: absolute; bottom: 3px; left: 5px; font-size: 8px; color: #00ff66; background: rgba(0,0,0,0.8); padding: 2px; }
 
-        .modal-body { font-size: 10px; line-height: 1.4; color: #00cc44; background: #020804; padding: 6px; border: 1px solid #003311; }
-        .modal-body div { margin-bottom: 2px; }
+        .modal-body { font-size: 9.5px; line-height: 1.35; color: #00cc44; background: #010603; padding: 5px; border: 1px solid #003311; }
+        .modal-body div { margin-bottom: 1px; }
 
-        .weapon-select-section { border-top: 1px dashed #004422; padding-top: 6px; }
-        .weapon-label { color: #ffff00; font-size: 10px; font-weight: bold; margin-bottom: 4px; }
-        .weapon-options { display: flex; gap: 4px; }
+        .weapon-select-section { border-top: 1px dashed #004422; padding-top: 4px; }
+        .weapon-label { color: #ffff00; font-size: 9.5px; font-weight: bold; margin-bottom: 3px; }
+        .weapon-options { display: flex; gap: 3px; }
         .weapon-btn {
-            flex: 1; padding: 6px 2px; background: #041008; border: 1px solid #008844;
-            color: #008844; font-family: inherit; font-size: 9px; font-weight: bold; border-radius: 3px; text-align: center; cursor: pointer;
+            flex: 1; padding: 5px 2px; background: #030d07; border: 1px solid #008844;
+            color: #008844; font-family: inherit; font-size: 8.5px; font-weight: bold; border-radius: 3px; text-align: center; cursor: pointer;
         }
-        .weapon-btn.selected { background: #006622; border-color: #00ff66; color: #ffffff; box-shadow: inset 0 0 5px rgba(0,255,102,0.5); }
+        .weapon-btn.selected { background: #005522; border-color: #00ff66; color: #ffffff; }
 
-        .action-btn { width: 100%; padding: 9px; background: #006622; border: 1px solid #00ff66; color: #ffffff; font-family: inherit; font-weight: bold; font-size: 11px; border-radius: 4px; cursor: pointer; letter-spacing: 1px; }
-        .action-btn:hover { background: #008833; }
+        .action-btn { width: 100%; padding: 8px; background: #005522; border: 1px solid #00ff66; color: #ffffff; font-family: inherit; font-weight: bold; font-size: 10.5px; border-radius: 4px; cursor: pointer; margin-top: 2px; }
 
         #score-modal {
             position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            width: 88%; max-width: 340px; background: rgba(4, 12, 8, 0.99);
-            border: 2px solid #ffff00; border-radius: 8px; padding: 16px; z-index: 30; text-align: center;
+            width: 88%; max-width: 340px; background: rgba(3, 10, 6, 0.99);
+            border: 2px solid #ffff00; border-radius: 8px; padding: 14px; z-index: 30; text-align: center;
         }
-        #score-title { color: #ffff00; font-size: 14px; font-weight: bold; margin-bottom: 8px; }
-        #score-desc { color: #00ff66; font-size: 11px; line-height: 1.5; margin-bottom: 14px; text-align: left; background: #010603; padding: 8px; border: 1px solid #004422; }
-        .score-close-btn { width: 100%; padding: 8px; background: #006622; border: 1px solid #ffff00; color: #ffff00; font-family: inherit; font-weight: bold; border-radius: 4px; cursor: pointer; }
+        #score-title { color: #ffff00; font-size: 13px; font-weight: bold; margin-bottom: 6px; }
+        #score-desc { color: #00ff66; font-size: 10.5px; line-height: 1.45; margin-bottom: 12px; text-align: left; background: #010502; padding: 6px; border: 1px solid #004422; }
+        .score-close-btn { width: 100%; padding: 7px; background: #005522; border: 1px solid #ffff00; color: #ffff00; font-family: inherit; font-weight: bold; border-radius: 4px; cursor: pointer; }
     </style>
 </head>
 <body>
     <div id="game-container">
         <header id="ui-header">
-            <div><span class="label">FAC(A)</span> <span id="callsign">HOG-1</span></div>
-            <div><span class="label">STATUS:</span> <span id="a10-status" class="green">STATION</span></div>
+            <div><span class="label">WAVE:</span> <span id="wave-display" class="green">1/3</span></div>
+            <div><span class="label">MAV:</span> <span id="mav-count" class="green">4</span> | <span class="label">GBU:</span> <span id="gbu-count" class="green">2</span></div>
             <div><span class="label">SCORE:</span> <span id="score-display" class="green">0</span></div>
         </header>
 
         <div id="canvas-wrapper">
             <canvas id="tactical-map"></canvas>
+            
+            <div id="tactical-toolbar">
+                <button class="tool-btn active" id="tool-target">🎯 攻擊目標模式</button>
+                <button class="tool-btn" id="tool-ip">📍 設置進場點 (IP)</button>
+                <button class="tool-btn" id="tool-egress">🏁 設置撤出點 (EGRESS)</button>
+            </div>
+
             <div id="map-controls">
                 <button id="btn-zoom-in">+</button>
                 <button id="btn-zoom-out">-</button>
                 <button id="btn-reset">CEN</button>
             </div>
-            <div id="danger-alert" class="alert-box hidden">🚨 RWR: SAM LOCK-ON! MISSILE THREAT DETECTED!</div>
+            <div id="danger-alert" class="alert-box hidden">🚨 RWR: SAM LOCK! THREAT AREA!</div>
         </div>
 
         <div id="target-modal" class="hidden">
@@ -92,7 +109,7 @@
             
             <div class="tgp-preview" id="tgp-container">
                 <div class="tgp-reticle"></div>
-                <div class="tgp-text" id="tgp-info">FLIR/BW || TGP AREA TRK || PRF: 1688</div>
+                <div class="tgp-text" id="tgp-info">FLIR/WH || TGP POINT TRK || PRF: 1688</div>
             </div>
 
             <div id="modal-body" class="modal-body"></div>
@@ -100,17 +117,17 @@
             <div class="weapon-select-section">
                 <div class="weapon-label">ORDNANCE SELECT / 武器掛載選擇:</div>
                 <div class="weapon-options">
-                    <button class="weapon-btn selected" data-weapon="mav">AGM-65 (小牛)</button>
-                    <button class="weapon-btn" data-weapon="bomb">GBU-12 (雷射炸彈)</button>
-                    <button class="weapon-btn" data-weapon="gun">30mm (GAU-8 機砲)</button>
+                    <button class="weapon-btn selected" data-weapon="mav">AGM-65 (<span id="opt-mav">4</span>)</button>
+                    <button class="weapon-btn" data-weapon="bomb">GBU-12 (<span id="opt-gbu">2</span>)</button>
+                    <button class="weapon-btn" data-weapon="gun">30mm 機砲</button>
                 </div>
             </div>
 
-            <button id="modal-action-btn" class="action-btn">► READBACK & CLEARED HOT</button>
+            <button id="modal-action-btn" class="action-btn">► TRANSMIT & CLEARED HOT</button>
         </div>
 
         <div id="score-modal" class="hidden">
-            <div id="score-title">BATTLE DAMAGE ASSESSMENT (BDA)</div>
+            <div id="score-title">BATTLE DAMAGE ASSESSMENT</div>
             <div id="score-desc">評算內容</div>
             <button class="score-close-btn" id="score-close">確認 / CONTINUE</button>
         </div>
@@ -124,12 +141,30 @@
         const modalBody = document.getElementById('modal-body');
         const modalClose = document.getElementById('modal-close');
         const modalActionBtn = document.getElementById('modal-action-btn');
-        const a10StatusEl = document.getElementById('a10-status');
         const scoreDisplay = document.getElementById('score-display');
+        const waveDisplay = document.getElementById('wave-display');
+        const mavCountEl = document.getElementById('mav-count');
+        const gbuCountEl = document.getElementById('gbu-count');
+        const optMav = document.getElementById('opt-mav');
+        const optGbu = document.getElementById('opt-gbu');
         const scoreModal = document.getElementById('score-modal');
         const scoreDesc = document.getElementById('score-desc');
         const scoreClose = document.getElementById('score-close');
         const tgpInfo = document.getElementById('tgp-info');
+
+        // 工具模式: 'target', 'ip', 'egress'
+        let currentTool = 'target';
+        document.getElementById('tool-target').addEventListener('click', () => setTool('target'));
+        document.getElementById('tool-ip').addEventListener('click', () => setTool('ip'));
+        document.getElementById('tool-egress').addEventListener('click', () => setTool('egress'));
+
+        function setTool(tool) {
+            currentTool = tool;
+            document.querySelectorAll('.tool-btn').forEach(b => b.classList.remove('active'));
+            if(tool === 'target') document.getElementById('tool-target').classList.add('active');
+            if(tool === 'ip') document.getElementById('tool-ip').classList.add('active');
+            if(tool === 'egress') document.getElementById('tool-egress').classList.add('active');
+        }
 
         let camera = { x: 0, y: 0, zoom: 1, minZoom: 0.5, maxZoom: 2.5 };
         let isDragging = false;
@@ -137,68 +172,81 @@
         let selectedTarget = null;
         let selectedWeapon = 'mav';
         let attackAnimation = null;
-        let totalScore = 0;
-        let isGameOver = false;
+        
+        let gameState = {
+            score: 0,
+            wave: 1,
+            maxWaves: 3,
+            ammoMav: 4,
+            ammoGbu: 2,
+            isGameOver: false
+        };
 
         let mapData = {
-            ip: { x: -160, y: -150, name: "IP DIXIE" },
-            egress: { x: 160, y: -70, name: "EGRESS NORTH" },
-            alphaTeam: { x: -110, y: 110, name: "ALPHA 1-1" },
+            ip: { x: -140, y: -130, name: "CUSTOM IP" },
+            egress: { x: 140, y: -130, name: "CUSTOM EGRESS" },
+            alphaTeam: { x: -100, y: 90, name: "ALPHA 1-1" },
             samSites: [],
             targets: []
-        }
+        };
 
-        function generateRandomScenario() {
-            const ipNames = ["IP DIXIE", "IP ALPHA", "IP BRAVO", "IP CHARLIE"];
-            mapData.ip = { 
-                x: -170 + Math.random() * 30, 
-                y: -150 + Math.random() * 30, 
-                name: ipNames[Math.floor(Math.random() * ipNames.length)] 
-            };
-            mapData.egress = { x: 140 + Math.random() * 40, y: -80 + Math.random() * 30, name: "EGRESS NORTH" };
-            mapData.alphaTeam = { x: -110 + Math.random() * 20, y: 100 + Math.random() * 30, name: "ALPHA 1-1" };
+        function generateCampaignWave() {
+            // 預設將 IP 與 Egress 放在安全外圍，讓玩家可以自己拉
+            mapData.ip = { x: -150, y: -140, name: "IP DIXIE" };
+            mapData.egress = { x: 150, y: -140, name: "EGRESS NORTH" };
+            mapData.alphaTeam = { x: -90, y: 90, name: "ALPHA 1-1" };
 
-            // 隨機防空陣地
             mapData.samSites = [];
-            const samTypes = ["SA-6 Gainful (Kub)", "ZSU-23-4 Shilka", "SA-19 Tunguska"];
-            const samCoords = [{ x: 60, y: 70 }, { x: 110, y: -100 }, { x: -40, y: -90 }];
+            const samTypes = ["SA-6 Kub", "ZSU-23 Shilka", "SA-19 Tunguska"];
+            const samCount = Math.min(3, 1 + gameState.wave);
             
-            for (let i = 0; i < 2; i++) {
-                let coord = samCoords[i];
+            // 把防空陣地放在地圖中央附近，保留外圍通道給玩家規劃航線
+            for (let i = 0; i < samCount; i++) {
                 mapData.samSites.push({
                     id: `SAM-${i+1}`,
-                    x: coord.x + (Math.random() * 20 - 10),
-                    y: coord.y + (Math.random() * 20 - 10),
-                    radius: 95,
-                    name: `SAM-0${i+1} (${samTypes[Math.floor(Math.random() * samTypes.length)]})`
+                    x: (i * 50) - 25,
+                    y: (i * 30) - 30,
+                    radius: 75,
+                    name: `SAM-0${i+1} (${samTypes[i % samTypes.length]})`
                 });
             }
 
-            // 目標配置：一個外圍安全點，兩個防空網深處高威脅點
             mapData.targets = [];
             const tgtPool = [
-                { name: "T-72B3 Tank Platoon", type: "ARMOR", best: "mav", elev: "450 FT", prf: "1688" },
-                { name: "BTR-82 Mechanized Squad", type: "APC", best: "gun", elev: "410 FT", prf: "1689" },
-                { name: "2S19 Msta Self-Propelled Howitzer", type: "ARTILLERY", best: "bomb", elev: "520 FT", prf: "1690" }
+                { name: "T-80BV Heavy Armor", type: "ARMOR", best: "mav", elev: "480 FT", prf: "1688" },
+                { name: "BMP-3 Mechanized Infantry", type: "APC", best: "gun", elev: "410 FT", prf: "1689" },
+                { name: "2S19 Msta Howitzer Battery", type: "ARTILLERY", best: "bomb", elev: "530 FT", prf: "1690" },
+                { name: "Radar Station & Comms", type: "RADAR", best: "bomb", elev: "610 FT", prf: "1691" }
             ];
 
-            // 1. 外部安全目標 (引導熱身)
-            let t1 = tgtPool[0];
-            mapData.targets.push({
-                id: 1, code: "OBJ-01", name: t1.name, type: t1.type,
-                x: -20 + Math.random() * 15, y: 40 + Math.random() * 15,
-                elev: t1.elev, grid: "NV 341 882", bestWeapon: t1.best, prf: t1.prf, destroyed: false
-            });
-
-            // 2. 內部防空網目標
-            for (let i = 1; i < 3; i++) {
-                let tDef = tgtPool[i];
+            const targetCount = 2 + gameState.wave;
+            for (let i = 0; i < targetCount; i++) {
+                let tDef = tgtPool[i % tgtPool.length];
                 mapData.targets.push({
-                    id: i + 1, code: `OBJ-0${i+1}`, name: tDef.name, type: tDef.type,
-                    x: 70 + (i * 35) + Math.random() * 15, y: -40 + (i * 45) + Math.random() * 15,
-                    elev: tDef.elev, grid: `NV ${340+i} ${870+i}`, bestWeapon: tDef.best, prf: tDef.prf, destroyed: false
+                    id: i + 1,
+                    code: `OBJ-0${i+1}`,
+                    name: tDef.name,
+                    type: tDef.type,
+                    x: (i * 40) - 40 + (Math.random() * 15),
+                    y: (i * 20) + (Math.random() * 15),
+                    elev: tDef.elev,
+                    grid: `NV ${340+i} ${870+i}`,
+                    bestWeapon: tDef.best,
+                    prf: tDef.prf,
+                    destroyed: false
                 });
             }
+
+            updateUIStats();
+        }
+
+        function updateUIStats() {
+            waveDisplay.textContent = `${gameState.wave}/${gameState.maxWaves}`;
+            scoreDisplay.textContent = gameState.score;
+            mavCountEl.textContent = gameState.ammoMav;
+            gbuCountEl.textContent = gameState.ammoGbu;
+            optMav.textContent = gameState.ammoMav;
+            optGbu.textContent = gameState.ammoGbu;
         }
 
         function initCanvas() {
@@ -210,7 +258,7 @@
         window.addEventListener('resize', initCanvas);
 
         function drawMap() {
-            ctx.fillStyle = "#010402";
+            ctx.fillStyle = "#010302";
             ctx.fillRect(0, 0, canvas.width, canvas.height);
 
             ctx.save();
@@ -244,9 +292,9 @@
             mapData.samSites.forEach(sam => {
                 ctx.beginPath();
                 ctx.arc(sam.x, sam.y, sam.radius, 0, Math.PI * 2);
-                ctx.fillStyle = "rgba(255, 0, 0, 0.12)";
+                ctx.fillStyle = "rgba(255, 0, 0, 0.1)";
                 ctx.fill();
-                ctx.strokeStyle = "rgba(255, 50, 50, 0.6)";
+                ctx.strokeStyle = "rgba(255, 50, 50, 0.5)";
                 ctx.lineWidth = 1.5 / camera.zoom;
                 ctx.setLineDash([5, 5]);
                 ctx.stroke();
@@ -254,16 +302,23 @@
 
                 ctx.fillStyle = "#ff4444";
                 ctx.font = `${10 / camera.zoom}px Courier New`;
-                ctx.fillText(`⚡ ${sam.name}`, sam.x - 40, sam.y + sam.radius + 12);
+                ctx.fillText(`⚡ ${sam.name}`, sam.x - 38, sam.y + sam.radius + 12);
             });
         }
 
         function drawFriendly() {
+            // 繪製 IP 與 Egress 標記點
             ctx.fillStyle = "#00ffff";
-            ctx.beginPath();
-            ctx.arc(mapData.alphaTeam.x, mapData.alphaTeam.y, 5, 0, Math.PI * 2);
-            ctx.fill();
+            ctx.beginPath(); ctx.arc(mapData.ip.x, mapData.ip.y, 6, 0, Math.PI * 2); ctx.fill();
             ctx.font = `${10 / camera.zoom}px Courier New`;
+            ctx.fillText("📍 " + mapData.ip.name + " (IP)", mapData.ip.x + 8, mapData.ip.y + 3);
+
+            ctx.fillStyle = "#ffff00";
+            ctx.beginPath(); ctx.arc(mapData.egress.x, mapData.egress.y, 6, 0, Math.PI * 2); ctx.fill();
+            ctx.fillText("🏁 " + mapData.egress.name, mapData.egress.x + 8, mapData.egress.y + 3);
+
+            ctx.fillStyle = "#00ffff";
+            ctx.beginPath(); ctx.arc(mapData.alphaTeam.x, mapData.alphaTeam.y, 5, 0, Math.PI * 2); ctx.fill();
             ctx.fillText("💬 " + mapData.alphaTeam.name + " (JTAC)", mapData.alphaTeam.x + 8, mapData.alphaTeam.y + 3);
         }
 
@@ -305,20 +360,22 @@
         }
 
         function drawFlightPath() {
-            if (!selectedTarget) return;
-
-            ctx.fillStyle = "#00ffff";
-            ctx.font = `${10 / camera.zoom}px Courier New`;
-            ctx.fillText("▲ " + mapData.ip.name, mapData.ip.x - 25, mapData.ip.y - 8);
-            ctx.fillText("▲ " + mapData.egress.name, mapData.egress.x + 8, mapData.egress.y);
+            if (!selectedTarget) {
+                alertBox.classList.add('hidden');
+                return;
+            }
 
             const isIngressDanger = checkSAMIntersection(mapData.ip, selectedTarget);
             const isEgressDanger = checkSAMIntersection(selectedTarget, mapData.egress);
 
             if (isIngressDanger || isEgressDanger) {
+                alertBox.textContent = "🚨 RWR: 航線穿過防空網！請切換工具重新設置 IP/Egress";
+                alertBox.className = "alert-box danger";
                 alertBox.classList.remove('hidden');
             } else {
-                alertBox.classList.add('hidden');
+                alertBox.textContent = "✅ 戰術航線安全：成功避開防空雷達威脅";
+                alertBox.className = "alert-box safe";
+                alertBox.classList.remove('hidden');
             }
 
             ctx.lineWidth = 2 / camera.zoom;
@@ -361,7 +418,7 @@
                     target.destroyed = true;
                     ctx.fillStyle = "rgba(255, 120, 0, 0.9)";
                     ctx.beginPath();
-                    ctx.arc(p2.x, p2.y, (15 + Math.random() * 10) / camera.zoom, 0, Math.PI * 2);
+                    ctx.arc(p2.x, p2.y, (16 + Math.random() * 8) / camera.zoom, 0, Math.PI * 2);
                     ctx.fill();
                 }
             } else {
@@ -387,13 +444,19 @@
 
         function startAttackRun() {
             if (!selectedTarget) return;
+
+            if (selectedWeapon === 'mav' && gameState.ammoMav <= 0) { alert("⚠️ AGM-65 彈藥耗盡！"); return; }
+            if (selectedWeapon === 'bomb' && gameState.ammoGbu <= 0) { alert("⚠️ GBU-12 彈藥耗盡！"); return; }
+
+            if (selectedWeapon === 'mav') gameState.ammoMav--;
+            if (selectedWeapon === 'bomb') gameState.ammoGbu--;
+            updateUIStats();
+
             targetModal.classList.add('hidden');
             alertBox.classList.add('hidden');
-            a10StatusEl.textContent = "ATTACK RUN (IP-TGT)";
-            a10StatusEl.className = "red";
 
             let startTime = null;
-            const duration = 4500;
+            const duration = 4000;
 
             attackAnimation = {
                 p1: mapData.ip,
@@ -414,8 +477,6 @@
                     requestAnimationFrame(step);
                 } else {
                     attackAnimation = null;
-                    a10StatusEl.textContent = "ON STATION";
-                    a10StatusEl.className = "green";
                     evaluateAttack(selectedTarget, selectedWeapon);
                     drawMap();
                 }
@@ -431,25 +492,37 @@
 
             if (tgt.bestWeapon === weapon) {
                 scoreAdd = 150;
-                resultText = `🎯 【完美武器匹配 (OPTIMAL ORDNANCE)】\n- 目標: ${tgt.code} (${tgt.name})\n- TGP 與雷射碼 (PRF ${tgt.prf}) 鎖定精準！\n- 獲得分數: +150 分`;
+                resultText = `🎯 【完美的武器運用 (OPTIMAL ORDNANCE)】\n- 目標: ${tgt.code} (${tgt.name})\n- TGP 與雷射編碼 (PRF ${tgt.prf}) 完美對應！\n- 獲得分數: +150 分`;
             } else {
-                scoreAdd = 60;
-                resultText = `⚠️ 【次佳武器配置 (SUBOPTIMAL)】\n- 目標: ${tgt.code} (${tgt.name})\n- 雖成功摧毀，但武器效率較差或耗費過多彈藥。\n- 獲得分數: +60 分`;
+                scoreAdd = 50;
+                resultText = `⚠️ 【次佳武器配置 (SUBOPTIMAL)】\n- 目標: ${tgt.code} (${tgt.name})\n- 雖成功摧毀，但效率較低。\n- 獲得分數: +50 分`;
             }
 
             if (isDanger) {
-                scoreAdd -= 30;
-                resultText += `\n🚨 【RWR 警告】航線穿過防空雷達罩，遭受防空飛彈威脅反擊！(-30 分)`;
+                scoreAdd -= 40;
+                resultText += `\n🚨 【RWR 警告】航線穿過防空雷達罩，遭防空火力迎擊！(-40 分)`;
+            } else {
+                scoreAdd += 50;
+                resultText += `\n🌟 【戰術匿蹤獎勵】成功規劃安全航線避開防空網！(+50 分)`;
             }
 
-            totalScore = Math.max(0, totalScore + scoreAdd);
-            scoreDisplay.textContent = totalScore;
+            gameState.score = Math.max(0, gameState.score + scoreAdd);
+            scoreDisplay.textContent = gameState.score;
 
             const allDestroyed = mapData.targets.every(t => t.destroyed);
             if (allDestroyed) {
-                isGameOver = true;
-                resultText += `\n\n🏆 【全區肅清 - 任務圓滿成功 (FAC SUCESS)】\n所有敵方威脅已被清除。總分: ${totalScore}`;
-                scoreClose.textContent = "重新部署新任務 / NEW FLIGHT";
+                if (gameState.wave < gameState.maxWaves) {
+                    gameState.wave++;
+                    resultText += `\n\n🌟 【WAVE ${gameState.wave-1} 圓滿クリア】\n進入下一波戰區！補給彈藥已重置。`;
+                    gameState.ammoMav = Math.min(4, gameState.ammoMav + 2);
+                    gameState.ammoGbu = Math.min(3, gameState.ammoGbu + 1);
+                    generateCampaignWave();
+                    scoreClose.textContent = "進入下一波作戰 / NEXT WAVE";
+                } else {
+                    gameState.isGameOver = true;
+                    resultText += `\n\n🏆 【全戰役勝利 (CAMPAIGN COMPLETE)】\n總分: ${gameState.score}`;
+                    scoreClose.textContent = "重新開始新戰役 / NEW CAMPAIGN";
+                }
             } else {
                 scoreClose.textContent = "確認 / CONTINUE";
             }
@@ -467,6 +540,22 @@
             const mapX = (clickX - canvas.width / 2 - camera.x) / camera.zoom;
             const mapY = (clickY - canvas.height / 2 - camera.y) / camera.zoom;
 
+            if (currentTool === 'ip') {
+                mapData.ip.x = mapX;
+                mapData.ip.y = mapY;
+                setTool('target');
+                drawMap();
+                return;
+            }
+            if (currentTool === 'egress') {
+                mapData.egress.x = mapX;
+                mapData.egress.y = mapY;
+                setTool('target');
+                drawMap();
+                return;
+            }
+
+            // 攻擊目標模式
             let clicked = null;
             mapData.targets.forEach(tgt => {
                 const dist = Math.hypot(tgt.x - mapX, tgt.y - mapY);
@@ -484,14 +573,14 @@
             modalTitle.textContent = `9-LINE BRIEFING: ${tgt.code}`;
             tgpInfo.textContent = `FLIR/WH || TGP POINT TRK || PRF CODE: ${tgt.prf}`;
             modalBody.innerHTML = `
-                <div><strong>1. IP / Heading:</strong> ${mapData.ip.name} / 128°</div>
-                <div><strong>2. Distance / Offset:</strong> 5.4 NM / LEFT</div>
+                <div><strong>1. Custom IP:</strong> User Defined / 128°</div>
+                <div><strong>2. Distance:</strong> 5.4 NM</div>
                 <div><strong>3. Target Elevation:</strong> ${tgt.elev}</div>
                 <div><strong>4. Target Description:</strong> ${tgt.name}</div>
                 <div><strong>5. Target Location:</strong> ${tgt.grid}</div>
-                <div><strong>6. Marks:</strong> IR Pointer / Laser Code ${tgt.prf}</div>
-                <div><strong>7. Friendlies:</strong> ${mapData.alphaTeam.name} (Marked)</div>
-                <div><strong>8. Egress:</strong> NORTH via ${mapData.egress.name}</div>
+                <div><strong>6. Marks:</strong> Laser Code ${tgt.prf}</div>
+                <div><strong>7. Friendlies:</strong> ${mapData.alphaTeam.name}</div>
+                <div><strong>8. Egress:</strong> Custom Egress Point</div>
             `;
             targetModal.classList.remove('hidden');
         }
@@ -510,18 +599,18 @@
             });
         });
 
-        modalActionBtn.addEventListener('click', () => {
-            startAttackRun();
-        });
+        modalActionBtn.addEventListener('click', () => { startAttackRun(); });
 
         scoreClose.addEventListener('click', () => {
             scoreModal.classList.add('hidden');
             selectedTarget = null;
-            if (isGameOver) {
-                isGameOver = false;
-                totalScore = 0;
-                scoreDisplay.textContent = totalScore;
-                generateRandomScenario();
+            if (gameState.isGameOver) {
+                gameState.isGameOver = false;
+                gameState.score = 0;
+                gameState.wave = 1;
+                gameState.ammoMav = 4;
+                gameState.ammoGbu = 2;
+                generateCampaignWave();
             }
             drawMap();
         });
@@ -538,7 +627,7 @@
         document.getElementById('btn-zoom-out').addEventListener('click', () => { camera.zoom = Math.max(camera.minZoom, camera.zoom - 0.2); drawMap(); });
         document.getElementById('btn-reset').addEventListener('click', () => { camera.x = 0; camera.y = 0; camera.zoom = 1; drawMap(); });
 
-        generateRandomScenario();
+        generateCampaignWave();
         initCanvas();
     </script>
 </body>
