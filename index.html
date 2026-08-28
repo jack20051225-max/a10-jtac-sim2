@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>A-10C FAC(A) Tactical Route Planner</title>
+    <title>A-10C FAC(A) Tactical Waypoint Planner</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; user-select: none; -webkit-user-select: none; }
         body, html { width: 100%; height: 100%; overflow: hidden; background-color: #020503; font-family: 'Courier New', Courier, monospace; color: #00ff66; }
@@ -18,20 +18,20 @@
         #canvas-wrapper { position: absolute; top: 45px; left: 0; right: 0; bottom: 0; background: #010302; }
         canvas { display: block; width: 100%; height: 100%; }
 
-        /* 戰術工具列：切換點擊目標或規劃航線 */
+        /* 戰術工具列：支援多航點與 IP/Egress 設置 */
         #tactical-toolbar {
-            position: absolute; top: 10px; left: 10px; display: flex; flex-direction: column; gap: 5px; z-index: 5;
+            position: absolute; top: 10px; left: 10px; display: flex; flex-direction: column; gap: 4px; z-index: 5;
         }
         .tool-btn {
-            padding: 6px 10px; background: rgba(6, 16, 10, 0.95); border: 1px solid #008844;
-            color: #008844; font-family: inherit; font-size: 9px; font-weight: bold; border-radius: 4px; cursor: pointer; text-align: left;
+            padding: 5px 8px; background: rgba(6, 16, 10, 0.95); border: 1px solid #008844;
+            color: #008844; font-family: inherit; font-size: 8.5px; font-weight: bold; border-radius: 4px; cursor: pointer; text-align: left;
         }
         .tool-btn.active { border-color: #00ff66; color: #00ff66; background: rgba(0, 85, 34, 0.6); box-shadow: 0 0 8px rgba(0,255,102,0.4); }
 
         #map-controls { position: absolute; right: 10px; top: 10px; display: flex; flex-direction: column; gap: 6px; z-index: 5; }
-        #map-controls button { width: 42px; height: 42px; background: rgba(6, 16, 10, 0.9); border: 1px solid #00ff66; color: #00ff66; font-size: 16px; font-weight: bold; border-radius: 4px; cursor: pointer; }
+        #map-controls button { width: 40px; height: 40px; background: rgba(6, 16, 10, 0.9); border: 1px solid #00ff66; color: #00ff66; font-size: 16px; font-weight: bold; border-radius: 4px; cursor: pointer; }
         
-        .alert-box { position: absolute; top: 10px; left: 50%; transform: translateX(-50%); background: rgba(180, 0, 0, 0.95); color: #fff; border: 1px solid #ff0000; padding: 6px 12px; font-size: 10px; font-weight: bold; border-radius: 4px; z-index: 6; text-align: center; width: 75%; pointer-events: none; }
+        .alert-box { position: absolute; top: 10px; left: 50%; transform: translateX(-50%); background: rgba(180, 0, 0, 0.95); color: #fff; border: 1px solid #ff0000; padding: 5px 10px; font-size: 9.5px; font-weight: bold; border-radius: 4px; z-index: 6; text-align: center; width: 65%; pointer-events: none; }
         .alert-box.danger { animation: flash 0.8s infinite; }
         .alert-box.safe { background: rgba(0, 100, 50, 0.95); border-color: #00ff66; }
         @keyframes flash { 0% { opacity: 1; } 50% { opacity: 0.3; } 100% { opacity: 1; } }
@@ -48,15 +48,15 @@
         .modal-title { color: #ffff00; font-weight: bold; font-size: 11px; }
         .close-btn { background: none; border: none; color: #ff5555; font-size: 16px; font-weight: bold; cursor: pointer; }
         
-        .tgp-preview { width: 100%; height: 90px; background: #000; border: 1px solid #005522; position: relative; overflow: hidden; display: flex; justify-content: center; align-items: center; }
-        .tgp-reticle { position: absolute; width: 36px; height: 36px; border: 1px dashed #00ff66; border-radius: 50%; }
+        .tgp-preview { width: 100%; height: 85px; background: #000; border: 1px solid #005522; position: relative; overflow: hidden; display: flex; justify-content: center; align-items: center; }
+        .tgp-reticle { position: absolute; width: 34px; height: 34px; border: 1px dashed #00ff66; border-radius: 50%; }
         .tgp-text { position: absolute; bottom: 3px; left: 5px; font-size: 8px; color: #00ff66; background: rgba(0,0,0,0.8); padding: 2px; }
 
-        .modal-body { font-size: 9.5px; line-height: 1.35; color: #00cc44; background: #010603; padding: 5px; border: 1px solid #003311; }
+        .modal-body { font-size: 9px; line-height: 1.35; color: #00cc44; background: #010603; padding: 5px; border: 1px solid #003311; }
         .modal-body div { margin-bottom: 1px; }
 
         .weapon-select-section { border-top: 1px dashed #004422; padding-top: 4px; }
-        .weapon-label { color: #ffff00; font-size: 9.5px; font-weight: bold; margin-bottom: 3px; }
+        .weapon-label { color: #ffff00; font-size: 9px; font-weight: bold; margin-bottom: 3px; }
         .weapon-options { display: flex; gap: 3px; }
         .weapon-btn {
             flex: 1; padding: 5px 2px; background: #030d07; border: 1px solid #008844;
@@ -64,16 +64,16 @@
         }
         .weapon-btn.selected { background: #005522; border-color: #00ff66; color: #ffffff; }
 
-        .action-btn { width: 100%; padding: 8px; background: #005522; border: 1px solid #00ff66; color: #ffffff; font-family: inherit; font-weight: bold; font-size: 10.5px; border-radius: 4px; cursor: pointer; margin-top: 2px; }
+        .action-btn { width: 100%; padding: 7px; background: #005522; border: 1px solid #00ff66; color: #ffffff; font-family: inherit; font-weight: bold; font-size: 10px; border-radius: 4px; cursor: pointer; margin-top: 2px; }
 
         #score-modal {
             position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
             width: 88%; max-width: 340px; background: rgba(3, 10, 6, 0.99);
             border: 2px solid #ffff00; border-radius: 8px; padding: 14px; z-index: 30; text-align: center;
         }
-        #score-title { color: #ffff00; font-size: 13px; font-weight: bold; margin-bottom: 6px; }
-        #score-desc { color: #00ff66; font-size: 10.5px; line-height: 1.45; margin-bottom: 12px; text-align: left; background: #010502; padding: 6px; border: 1px solid #004422; }
-        .score-close-btn { width: 100%; padding: 7px; background: #005522; border: 1px solid #ffff00; color: #ffff00; font-family: inherit; font-weight: bold; border-radius: 4px; cursor: pointer; }
+        #score-title { color: #ffff00; font-size: 12px; font-weight: bold; margin-bottom: 6px; }
+        #score-desc { color: #00ff66; font-size: 10px; line-height: 1.4; margin-bottom: 10px; text-align: left; background: #010502; padding: 6px; border: 1px solid #004422; }
+        .score-close-btn { width: 100%; padding: 6px; background: #005522; border: 1px solid #ffff00; color: #ffff00; font-family: inherit; font-weight: bold; border-radius: 4px; cursor: pointer; }
     </style>
 </head>
 <body>
@@ -90,7 +90,9 @@
             <div id="tactical-toolbar">
                 <button class="tool-btn active" id="tool-target">🎯 攻擊目標模式</button>
                 <button class="tool-btn" id="tool-ip">📍 設置進場點 (IP)</button>
+                <button class="tool-btn" id="tool-waypoint">➕ 添加航點 (WP)</button>
                 <button class="tool-btn" id="tool-egress">🏁 設置撤出點 (EGRESS)</button>
+                <button class="tool-btn" id="tool-clear-wp" style="color: #ff5555; border-color: #aa2222;">🗑️ 清除中繼航點</button>
             </div>
 
             <div id="map-controls">
@@ -98,7 +100,7 @@
                 <button id="btn-zoom-out">-</button>
                 <button id="btn-reset">CEN</button>
             </div>
-            <div id="danger-alert" class="alert-box hidden">🚨 RWR: SAM LOCK! THREAT AREA!</div>
+            <div id="danger-alert" class="alert-box hidden">🚨 RWR: 航線穿過禁飛/防空區！</div>
         </div>
 
         <div id="target-modal" class="hidden">
@@ -132,6 +134,7 @@
             <button class="score-close-btn" id="score-close">確認 / CONTINUE</button>
         </div>
     </div>
+
     <script>
         const canvas = document.getElementById('tactical-map');
         const ctx = canvas.getContext('2d');
@@ -152,17 +155,22 @@
         const scoreClose = document.getElementById('score-close');
         const tgpInfo = document.getElementById('tgp-info');
 
-        // 工具模式: 'target', 'ip', 'egress'
         let currentTool = 'target';
         document.getElementById('tool-target').addEventListener('click', () => setTool('target'));
         document.getElementById('tool-ip').addEventListener('click', () => setTool('ip'));
+        document.getElementById('tool-waypoint').addEventListener('click', () => setTool('waypoint'));
         document.getElementById('tool-egress').addEventListener('click', () => setTool('egress'));
+        document.getElementById('tool-clear-wp').addEventListener('click', () => {
+            mapData.waypoints = [];
+            drawMap();
+        });
 
         function setTool(tool) {
             currentTool = tool;
             document.querySelectorAll('.tool-btn').forEach(b => b.classList.remove('active'));
             if(tool === 'target') document.getElementById('tool-target').classList.add('active');
             if(tool === 'ip') document.getElementById('tool-ip').classList.add('active');
+            if(tool === 'waypoint') document.getElementById('tool-waypoint').classList.add('active');
             if(tool === 'egress') document.getElementById('tool-egress').classList.add('active');
         }
 
@@ -183,33 +191,26 @@
         };
 
         let mapData = {
-            ip: { x: -140, y: -130, name: "CUSTOM IP" },
-            egress: { x: 140, y: -130, name: "CUSTOM EGRESS" },
-            alphaTeam: { x: -100, y: 90, name: "ALPHA 1-1" },
-            samSites: [],
+            ip: { x: -180, y: 0, name: "IP DIXIE" },
+            egress: { x: 180, y: 0, name: "EGRESS NORTH" },
+            waypoints: [], // 支援多個中繼航點
+            alphaTeam: { x: -120, y: 110, name: "ALPHA 1-1" },
+            noFlyZones: [], // 外圍不規則山谷與禁飛/防空區
             targets: []
         };
 
         function generateCampaignWave() {
-            // 預設將 IP 與 Egress 放在安全外圍，讓玩家可以自己拉
-            mapData.ip = { x: -150, y: -140, name: "IP DIXIE" };
-            mapData.egress = { x: 150, y: -140, name: "EGRESS NORTH" };
-            mapData.alphaTeam = { x: -90, y: 90, name: "ALPHA 1-1" };
+            mapData.ip = { x: -190, y: -40, name: "IP BAKER" };
+            mapData.egress = { x: 190, y: -40, name: "EGRESS ALPHA" };
+            mapData.waypoints = [];
+            mapData.alphaTeam = { x: -100, y: 100, name: "ALPHA 1-1" };
 
-            mapData.samSites = [];
-            const samTypes = ["SA-6 Kub", "ZSU-23 Shilka", "SA-19 Tunguska"];
-            const samCount = Math.min(3, 1 + gameState.wave);
-            
-            // 把防空陣地放在地圖中央附近，保留外圍通道給玩家規劃航線
-            for (let i = 0; i < samCount; i++) {
-                mapData.samSites.push({
-                    id: `SAM-${i+1}`,
-                    x: (i * 50) - 25,
-                    y: (i * 30) - 30,
-                    radius: 75,
-                    name: `SAM-0${i+1} (${samTypes[i % samTypes.length]})`
-                });
-            }
+            // 設置外圍不規則禁飛區/防空山脈 (模擬山谷地形封鎖)
+            mapData.noFlyZones = [
+                { x: -50, y: -20, radius: 65, name: "RESTRICTED VALLEY NORTH" },
+                { x: 50, y: -20, radius: 65, name: "RESTRICTED VALLEY SOUTH" },
+                { x: 0, y: 80, radius: 55, name: "SAM OUTER PERIMETER" }
+            ];
 
             mapData.targets = [];
             const tgtPool = [
@@ -222,15 +223,16 @@
             const targetCount = 2 + gameState.wave;
             for (let i = 0; i < targetCount; i++) {
                 let tDef = tgtPool[i % tgtPool.length];
+                // 目標區維持在中央乾淨區域，讓玩家可以透過外圍山谷繞路進入
                 mapData.targets.push({
                     id: i + 1,
                     code: `OBJ-0${i+1}`,
                     name: tDef.name,
                     type: tDef.type,
-                    x: (i * 40) - 40 + (Math.random() * 15),
-                    y: (i * 20) + (Math.random() * 15),
+                    x: (i * 35) - 35,
+                    y: 20 + (i % 2) * 25,
                     elev: tDef.elev,
-                    grid: `NV ${340+i} ${870+i}`,
+                    grid: `MGRS 38T LF ${420+i} ${190+i}`,
                     bestWeapon: tDef.best,
                     prf: tDef.prf,
                     destroyed: false
@@ -239,7 +241,6 @@
 
             updateUIStats();
         }
-
         function updateUIStats() {
             waveDisplay.textContent = `${gameState.wave}/${gameState.maxWaves}`;
             scoreDisplay.textContent = gameState.score;
@@ -266,7 +267,7 @@
             ctx.scale(camera.zoom, camera.zoom);
 
             drawGrid();
-            drawSAMSites();
+            drawNoFlyZones();
             drawFlightPath();
             drawFriendly();
             drawTargets();
@@ -288,38 +289,43 @@
             }
         }
 
-        function drawSAMSites() {
-            mapData.samSites.forEach(sam => {
+        function drawNoFlyZones() {
+            mapData.noFlyZones.forEach(nfz => {
                 ctx.beginPath();
-                ctx.arc(sam.x, sam.y, sam.radius, 0, Math.PI * 2);
-                ctx.fillStyle = "rgba(255, 0, 0, 0.1)";
+                ctx.arc(nfz.x, nfz.y, nfz.radius, 0, Math.PI * 2);
+                ctx.fillStyle = "rgba(255, 0, 0, 0.08)";
                 ctx.fill();
-                ctx.strokeStyle = "rgba(255, 50, 50, 0.5)";
+                ctx.strokeStyle = "rgba(255, 50, 50, 0.4)";
                 ctx.lineWidth = 1.5 / camera.zoom;
-                ctx.setLineDash([5, 5]);
+                ctx.setLineDash([4, 4]);
                 ctx.stroke();
                 ctx.setLineDash([]);
 
-                ctx.fillStyle = "#ff4444";
-                ctx.font = `${10 / camera.zoom}px Courier New`;
-                ctx.fillText(`⚡ ${sam.name}`, sam.x - 38, sam.y + sam.radius + 12);
+                ctx.fillStyle = "#ff5555";
+                ctx.font = `${9 / camera.zoom}px Courier New`;
+                ctx.fillText(`⛰️ ${nfz.name}`, nfz.x - 42, nfz.y + nfz.radius + 10);
             });
         }
 
         function drawFriendly() {
-            // 繪製 IP 與 Egress 標記點
             ctx.fillStyle = "#00ffff";
             ctx.beginPath(); ctx.arc(mapData.ip.x, mapData.ip.y, 6, 0, Math.PI * 2); ctx.fill();
             ctx.font = `${10 / camera.zoom}px Courier New`;
-            ctx.fillText("📍 " + mapData.ip.name + " (IP)", mapData.ip.x + 8, mapData.ip.y + 3);
+            ctx.fillText("📍 " + mapData.ip.name, mapData.ip.x + 8, mapData.ip.y + 3);
 
             ctx.fillStyle = "#ffff00";
             ctx.beginPath(); ctx.arc(mapData.egress.x, mapData.egress.y, 6, 0, Math.PI * 2); ctx.fill();
             ctx.fillText("🏁 " + mapData.egress.name, mapData.egress.x + 8, mapData.egress.y + 3);
 
+            mapData.waypoints.forEach((wp, index) => {
+                ctx.fillStyle = "#00ffcc";
+                ctx.beginPath(); ctx.arc(wp.x, wp.y, 4.5, 0, Math.PI * 2); ctx.fill();
+                ctx.fillText(`WP-${index+1}`, wp.x + 8, wp.y + 3);
+            });
+
             ctx.fillStyle = "#00ffff";
             ctx.beginPath(); ctx.arc(mapData.alphaTeam.x, mapData.alphaTeam.y, 5, 0, Math.PI * 2); ctx.fill();
-            ctx.fillText("💬 " + mapData.alphaTeam.name + " (JTAC)", mapData.alphaTeam.x + 8, mapData.alphaTeam.y + 3);
+            ctx.fillText("💬 " + mapData.alphaTeam.name, mapData.alphaTeam.x + 8, mapData.alphaTeam.y + 3);
         }
 
         function drawTargets() {
@@ -330,7 +336,7 @@
                 ctx.lineWidth = (isSelected ? 2 : 1) / camera.zoom;
 
                 ctx.beginPath();
-                ctx.arc(tgt.x, tgt.y, 9, 0, Math.PI * 2);
+                ctx.arc(tgt.x, tgt.y, 8, 0, Math.PI * 2);
                 ctx.stroke();
                 
                 ctx.beginPath();
@@ -338,23 +344,23 @@
                 ctx.fill();
 
                 ctx.fillStyle = tgt.destroyed ? "#666666" : (isSelected ? "#ffff00" : "#ff6666");
-                ctx.font = `${11 / camera.zoom}px Courier New`;
-                ctx.fillText(tgt.destroyed ? tgt.code + " [NEUTRALIZED]" : `${tgt.code} (${tgt.type})`, tgt.x + 12, tgt.y - 2);
+                ctx.font = `${10 / camera.zoom}px Courier New`;
+                ctx.fillText(tgt.destroyed ? tgt.code + " [DESTROYED]" : `${tgt.code} (${tgt.type})`, tgt.x + 12, tgt.y - 2);
             });
         }
 
-        function checkSAMIntersection(p1, p2) {
+        function checkSegmentIntersection(p1, p2) {
             let intersects = false;
-            mapData.samSites.forEach(sam => {
+            mapData.noFlyZones.forEach(nfz => {
                 const dx = p2.x - p1.x;
                 const dy = p2.y - p1.y;
                 const len = Math.hypot(dx, dy);
                 if (len === 0) return;
-                const u = Math.max(0, Math.min(1, ((sam.x - p1.x) * dx + (sam.y - p1.y) * dy) / (len * len)));
+                const u = Math.max(0, Math.min(1, ((nfz.x - p1.x) * dx + (nfz.y - p1.y) * dy) / (len * len)));
                 const projX = p1.x + u * dx;
                 const projY = p1.y + u * dy;
-                const dist = Math.hypot(sam.x - projX, sam.y - projY);
-                if (dist < sam.radius) intersects = true;
+                const dist = Math.hypot(nfz.x - projX, nfz.y - projY);
+                if (dist < nfz.radius) intersects = true;
             });
             return intersects;
         }
@@ -365,67 +371,63 @@
                 return;
             }
 
-            const isIngressDanger = checkSAMIntersection(mapData.ip, selectedTarget);
-            const isEgressDanger = checkSAMIntersection(selectedTarget, mapData.egress);
+            // 組合完整航線點陣列：IP -> [WP1, WP2, ...] -> Target -> [WP...] -> Egress
+            let fullPath = [mapData.ip, ...mapData.waypoints, selectedTarget, mapData.egress];
+            let hasDanger = false;
 
-            if (isIngressDanger || isEgressDanger) {
-                alertBox.textContent = "🚨 RWR: 航線穿過防空網！請切換工具重新設置 IP/Egress";
+            ctx.lineWidth = 2 / camera.zoom;
+            ctx.setLineDash([5, 3]);
+
+            for (let i = 0; i < fullPath.length - 1; i++) {
+                let p1 = fullPath[i];
+                let p2 = fullPath[i+1];
+                let segmentDanger = checkSegmentIntersection(p1, p2);
+                if (segmentDanger) hasDanger = true;
+
+                ctx.strokeStyle = segmentDanger ? "#ff3333" : "#00ffcc";
+                ctx.beginPath();
+                ctx.moveTo(p1.x, p1.y);
+                ctx.lineTo(p2.x, p2.y);
+                ctx.stroke();
+            }
+
+            ctx.setLineDash([]);
+
+            if (hasDanger) {
+                alertBox.textContent = "🚨 RWR: 航線穿過禁飛/防空區！請新增航點繞路";
                 alertBox.className = "alert-box danger";
                 alertBox.classList.remove('hidden');
             } else {
-                alertBox.textContent = "✅ 戰術航線安全：成功避開防空雷達威脅";
+                alertBox.textContent = "✅ 戰術航線安全：成功利用地形通道避開威脅";
                 alertBox.className = "alert-box safe";
                 alertBox.classList.remove('hidden');
             }
-
-            ctx.lineWidth = 2 / camera.zoom;
-            ctx.setLineDash([6, 4]);
-
-            ctx.strokeStyle = isIngressDanger ? "#ff2222" : "#00ffff";
-            ctx.beginPath();
-            ctx.moveTo(mapData.ip.x, mapData.ip.y);
-            ctx.lineTo(selectedTarget.x, selectedTarget.y);
-            ctx.stroke();
-
-            ctx.strokeStyle = isEgressDanger ? "#ff2222" : "#ffff00";
-            ctx.beginPath();
-            ctx.moveTo(selectedTarget.x, selectedTarget.y);
-            ctx.lineTo(mapData.egress.x, mapData.egress.y);
-            ctx.stroke();
-
-            ctx.setLineDash([]);
         }
 
         function drawAttackAnimation() {
-            const { p1, p2, p3, progress, target } = attackAnimation;
-            let currentX, currentY, angle;
+            const { path, progress, target } = attackAnimation;
+            if (!path || path.length < 2) return;
 
-            if (progress < 0.5) {
-                const t = progress / 0.5;
-                currentX = p1.x + (p2.x - p1.x) * t;
-                currentY = p1.y + (p2.y - p1.y) * t;
-                angle = Math.atan2(p2.y - p1.y, p2.x - p1.x);
+            // 根據總航點計算動畫插值
+            let totalSegs = path.length - 1;
+            let currentFloatIndex = progress * totalSegs;
+            let segIndex = Math.min(Math.floor(currentFloatIndex), totalSegs - 1);
+            let t = currentFloatIndex - segIndex;
 
-                if (t > 0.6 && t < 0.95) {
-                    ctx.strokeStyle = "#ffff00";
-                    ctx.lineWidth = 2 / camera.zoom;
-                    ctx.beginPath();
-                    ctx.moveTo(currentX, currentY);
-                    ctx.lineTo(p2.x, p2.y);
-                    ctx.stroke();
-                }
-                if (t >= 0.9) {
-                    target.destroyed = true;
-                    ctx.fillStyle = "rgba(255, 120, 0, 0.9)";
-                    ctx.beginPath();
-                    ctx.arc(p2.x, p2.y, (16 + Math.random() * 8) / camera.zoom, 0, Math.PI * 2);
-                    ctx.fill();
-                }
-            } else {
-                const t = (progress - 0.5) / 0.5;
-                currentX = p2.x + (p3.x - p2.x) * t;
-                currentY = p2.y + (p3.y - p2.y) * t;
-                angle = Math.atan2(p3.y - p2.y, p3.x - p2.x);
+            let p1 = path[segIndex];
+            let p2 = path[segIndex+1];
+
+            let currentX = p1.x + (p2.x - p1.x) * t;
+            let currentY = p1.y + (p2.y - p1.y) * t;
+            let angle = Math.atan2(p2.y - p1.y, p2.x - p1.x);
+
+            // 當接近目標時引爆
+            if (segIndex >= totalSegs - 1 && t > 0.8) {
+                target.destroyed = true;
+                ctx.fillStyle = "rgba(255, 120, 0, 0.9)";
+                ctx.beginPath();
+                ctx.arc(target.x, target.y, (14 + Math.random() * 6) / camera.zoom, 0, Math.PI * 2);
+                ctx.fill();
             }
 
             ctx.save();
@@ -433,10 +435,10 @@
             ctx.rotate(angle);
             ctx.fillStyle = "#00ff66";
             ctx.beginPath();
-            ctx.moveTo(10 / camera.zoom, 0);
-            ctx.lineTo(-8 / camera.zoom, -6 / camera.zoom);
-            ctx.lineTo(-4 / camera.zoom, 0);
-            ctx.lineTo(-8 / camera.zoom, 6 / camera.zoom);
+            ctx.moveTo(9 / camera.zoom, 0);
+            ctx.lineTo(-7 / camera.zoom, -5 / camera.zoom);
+            ctx.lineTo(-3 / camera.zoom, 0);
+            ctx.lineTo(-7 / camera.zoom, 5 / camera.zoom);
             ctx.closePath();
             ctx.fill();
             ctx.restore();
@@ -455,13 +457,12 @@
             targetModal.classList.add('hidden');
             alertBox.classList.add('hidden');
 
+            let fullPath = [mapData.ip, ...mapData.waypoints, selectedTarget, mapData.egress];
             let startTime = null;
-            const duration = 4000;
+            const duration = 4500;
 
             attackAnimation = {
-                p1: mapData.ip,
-                p2: { x: selectedTarget.x, y: selectedTarget.y },
-                p3: mapData.egress,
+                path: fullPath,
                 progress: 0,
                 target: selectedTarget
             };
@@ -488,22 +489,26 @@
         function evaluateAttack(tgt, weapon) {
             let scoreAdd = 0;
             let resultText = "";
-            const isDanger = checkSAMIntersection(mapData.ip, tgt) || checkSAMIntersection(tgt, mapData.egress);
+            let fullPath = [mapData.ip, ...mapData.waypoints, tgt, mapData.egress];
+            let hasDanger = false;
+            for (let i = 0; i < fullPath.length - 1; i++) {
+                if (checkSegmentIntersection(fullPath[i], fullPath[i+1])) hasDanger = true;
+            }
 
             if (tgt.bestWeapon === weapon) {
                 scoreAdd = 150;
-                resultText = `🎯 【完美的武器運用 (OPTIMAL ORDNANCE)】\n- 目標: ${tgt.code} (${tgt.name})\n- TGP 與雷射編碼 (PRF ${tgt.prf}) 完美對應！\n- 獲得分數: +150 分`;
+                resultText = `🎯 【完美武器運用 (OPTIMAL ORDNANCE)】\n- 目標: ${tgt.code} (${tgt.name})\n- 雷射編碼 PRF ${tgt.prf} 鎖定成功！\n- 獲得分數: +150 分`;
             } else {
-                scoreAdd = 50;
-                resultText = `⚠️ 【次佳武器配置 (SUBOPTIMAL)】\n- 目標: ${tgt.code} (${tgt.name})\n- 雖成功摧毀，但效率較低。\n- 獲得分數: +50 分`;
+                scoreAdd = 60;
+                resultText = `⚠️ 【次佳武器配置 (SUBOPTIMAL)】\n- 目標: ${tgt.code} (${tgt.name})\n- 雖成功摧毀，但效率一般。\n- 獲得分數: +60 分`;
             }
 
-            if (isDanger) {
-                scoreAdd -= 40;
-                resultText += `\n🚨 【RWR 警告】航線穿過防空雷達罩，遭防空火力迎擊！(-40 分)`;
+            if (hasDanger) {
+                scoreAdd -= 50;
+                resultText += `\n🚨 【防空警報】航線穿過禁飛/防空區遭攔截！(-50 分)`;
             } else {
-                scoreAdd += 50;
-                resultText += `\n🌟 【戰術匿蹤獎勵】成功規劃安全航線避開防空網！(+50 分)`;
+                scoreAdd += 60;
+                resultText += `\n🌟 【完美地形匿蹤獎勵】多航點規劃成功避開所有禁飛威脅！(+60 分)`;
             }
 
             gameState.score = Math.max(0, gameState.score + scoreAdd);
@@ -513,7 +518,7 @@
             if (allDestroyed) {
                 if (gameState.wave < gameState.maxWaves) {
                     gameState.wave++;
-                    resultText += `\n\n🌟 【WAVE ${gameState.wave-1} 圓滿クリア】\n進入下一波戰區！補給彈藥已重置。`;
+                    resultText += `\n\n🌟 【WAVE ${gameState.wave-1} 圓滿達成】\n進入下一作戰區！`;
                     gameState.ammoMav = Math.min(4, gameState.ammoMav + 2);
                     gameState.ammoGbu = Math.min(3, gameState.ammoGbu + 1);
                     generateCampaignWave();
@@ -554,12 +559,16 @@
                 drawMap();
                 return;
             }
+            if (currentTool === 'waypoint') {
+                mapData.waypoints.push({ x: mapX, y: mapY });
+                drawMap();
+                return;
+            }
 
-            // 攻擊目標模式
             let clicked = null;
             mapData.targets.forEach(tgt => {
                 const dist = Math.hypot(tgt.x - mapX, tgt.y - mapY);
-                if (dist < 45 / camera.zoom) clicked = tgt;
+                if (dist < 40 / camera.zoom) clicked = tgt;
             });
 
             if (clicked && !clicked.destroyed) {
@@ -573,14 +582,14 @@
             modalTitle.textContent = `9-LINE BRIEFING: ${tgt.code}`;
             tgpInfo.textContent = `FLIR/WH || TGP POINT TRK || PRF CODE: ${tgt.prf}`;
             modalBody.innerHTML = `
-                <div><strong>1. Custom IP:</strong> User Defined / 128°</div>
-                <div><strong>2. Distance:</strong> 5.4 NM</div>
+                <div><strong>1. Ingress IP:</strong> ${mapData.ip.name}</div>
+                <div><strong>2. Waypoints:</strong> ${mapData.waypoints.length} WP Active</div>
                 <div><strong>3. Target Elevation:</strong> ${tgt.elev}</div>
                 <div><strong>4. Target Description:</strong> ${tgt.name}</div>
-                <div><strong>5. Target Location:</strong> ${tgt.grid}</div>
-                <div><strong>6. Marks:</strong> Laser Code ${tgt.prf}</div>
-                <div><strong>7. Friendlies:</strong> ${mapData.alphaTeam.name}</div>
-                <div><strong>8. Egress:</strong> Custom Egress Point</div>
+                <div><strong>5. Coordinates:</strong> ${tgt.grid}</div>
+                <div><strong>6. Laser Code:</strong> PRF ${tgt.prf}</div>
+                <div><strong>7. JTAC Contact:</strong> ${mapData.alphaTeam.name}</div>
+                <div><strong>8. Egress Point:</strong> ${mapData.egress.name}</div>
             `;
             targetModal.classList.remove('hidden');
         }
