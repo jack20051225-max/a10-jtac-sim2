@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>A-10 CAS JTAC Tactical Simulator</title>
+    <title>A-10 CAS JTAC Tactical Simulator - Dynamic</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; user-select: none; -webkit-user-select: none; }
         body, html { width: 100%; height: 100%; overflow: hidden; background-color: #050b08; font-family: 'Courier New', Courier, monospace; color: #00ff66; }
@@ -52,7 +52,7 @@
         }
         #score-title { color: #ffff00; font-size: 14px; font-weight: bold; margin-bottom: 8px; }
         #score-desc { color: #00ff66; font-size: 11px; line-height: 1.5; margin-bottom: 12px; text-align: left; }
-        .score-close-btn { padding: 6px 15px; background: #007733; border: 1px solid #ffff00; color: #ffff00; font-family: inherit; font-weight: bold; border-radius: 4px; }
+        .score-close-btn { width: 100%; padding: 8px; background: #007733; border: 1px solid #ffff00; color: #ffff00; font-family: inherit; font-weight: bold; border-radius: 4px; cursor: pointer; }
     </style>
 </head>
 <body>
@@ -120,21 +120,87 @@
         let selectedWeapon = 'mav';
         let attackAnimation = null;
         let totalScore = 0;
+        let isGameOver = false;
 
-        const mapData = {
-            ip: { x: -150, y: -140, name: "IP DIXIE" },
-            egress: { x: 150, y: -60, name: "EGRESS NORTH" },
-            alphaTeam: { x: -100, y: 100, name: "ALPHA 1-1" },
-            samSites: [
-                { id: "SAM-1", x: 80, y: 100, radius: 90, name: "SAM-01 (SA-6)" },
-                { id: "SAM-2", x: 120, y: -150, radius: 90, name: "SAM-02 (ZSU-23)" }
-            ],
-            targets: [
-                { id: 1, code: "OBJ-01", name: "T-72 Tank Platoon", type: "ARMOR", x: -20, y: -20, elev: "450 FT", grid: "NV 341 882", bestWeapon: "mav", destroyed: false },
-                { id: 2, code: "OBJ-02", name: "Supply Convoy", type: "VEHICLE", x: 50, y: 60, elev: "410 FT", grid: "NV 348 871", bestWeapon: "gun", destroyed: false },
-                { id: 3, code: "OBJ-03", name: "Mortar Position", type: "INDIRECT FIRE", x: 90, y: -70, elev: "520 FT", grid: "NV 355 893", bestWeapon: "bomb", destroyed: false }
-            ]
+        let mapData = {
+            ip: { x: -160, y: -150, name: "IP DIXIE" },
+            egress: { x: 160, y: -70, name: "EGRESS NORTH" },
+            alphaTeam: { x: -110, y: 110, name: "ALPHA 1-1" },
+            samSites: [],
+            targets: []
         };
+
+        // 隨機生成每次不同的戰術地圖
+        function generateRandomScenario() {
+            // 隨機 IP / Egress 點
+            const ipNames = ["IP DIXIE", "IP ALPHA", "IP BRAVO", "IP COBRA"];
+            mapData.ip = { 
+                x: -180 + Math.random() * 40, 
+                y: -160 + Math.random() * 40, 
+                name: ipNames[Math.floor(Math.random() * ipNames.length)] 
+            };
+            mapData.egress = { x: 140 + Math.random() * 50, y: -80 + Math.random() * 40, name: "EGRESS NORTH" };
+            mapData.alphaTeam = { x: -120 + Math.random() * 30, y: 100 + Math.random() * 40, name: "ALPHA 1-1" };
+
+            // 隨機防空陣地 (2~3個)
+            mapData.samSites = [];
+            const samTypes = ["SA-6 Gainful", "ZSU-23-4 Shilka", "SA-9 Gaskin"];
+            const samCount = 2 + Math.floor(Math.random() * 2);
+            const samCoords = [
+                { x: 70, y: 80 }, { x: 100, y: -120 }, { x: -50, y: -100 }
+            ];
+            for (let i = 0; i < samCount; i++) {
+                let coord = samCoords[i];
+                mapData.samSites.push({
+                    id: `SAM-${i+1}`,
+                    x: coord.x + (Math.random() * 30 - 15),
+                    y: coord.y + (Math.random() * 30 - 15),
+                    radius: 85 + Math.random() * 20,
+                    name: `SAM-0${i+1} (${samTypes[Math.floor(Math.random() * samTypes.length)]})`
+                });
+            }
+
+            // 隨機目標 (3~4個)：刻意安排 1 個在防空圈外（安全目標），其餘在防空圈內
+            mapData.targets = [];
+            const tgtTypes = [
+                { name: "T-72 Tank Platoon", type: "ARMOR", best: "mav", elev: "450 FT" },
+                { name: "Supply Convoy", type: "VEHICLE", best: "gun", elev: "410 FT" },
+                { name: "Mortar Position", type: "INDIRECT FIRE", best: "bomb", elev: "520 FT" },
+                { name: "Mechanized Infantry", type: "INFANTRY", best: "gun", elev: "390 FT" }
+            ];
+
+            // 第一個目標：放在完全沒有防空涵蓋的安全區，讓玩家作為「第一擊」熱身
+            let safeTgtType = tgtTypes[Math.floor(Math.random() * tgtTypes.length)];
+            mapData.targets.push({
+                id: 1,
+                code: "OBJ-01",
+                name: safeTgtType.name,
+                type: tgtTypes[0].type,
+                x: -30 + Math.random() * 20,
+                y: 30 + Math.random() * 20, // 初始位置偏南，通常離防空圈較遠
+                elev: safeTgtType.elev,
+                grid: "NV 341 882",
+                bestWeapon: safeTgtType.best,
+                destroyed: false
+            });
+
+            // 後續目標 (2個)：分佈在防空網深處
+            for (let i = 1; i < 3; i++) {
+                let tDef = tgtTypes[Math.floor(Math.random() * tgtTypes.length)];
+                mapData.targets.push({
+                    id: i + 1,
+                    code: `OBJ-0${i+1}`,
+                    name: tDef.name,
+                    type: tDef.type,
+                    x: 60 + (i * 40) + Math.random() * 20,
+                    y: -50 + (i * 50) + Math.random() * 20,
+                    elev: tDef.elev,
+                    grid: `NV ${340 + i} ${870 + i}`,
+                    bestWeapon: tDef.best,
+                    destroyed: false
+                });
+            }
+        }
 
         function initCanvas() {
             canvas.width = window.innerWidth;
@@ -350,7 +416,7 @@
                     requestAnimationFrame(step);
                 } else {
                     attackAnimation = null;
-                    a10StatusEl.textContent = "MISSION COMPLETE";
+                    a10StatusEl.textContent = "ON STATION";
                     a10StatusEl.className = "green";
                     evaluateAttack(selectedTarget, selectedWeapon);
                     drawMap();
@@ -374,11 +440,22 @@
             }
 
             if (isDanger) {
-                resultText += `\n⚠️ 警告: 航線穿過防空威脅區！`;
+                resultText += `\n⚠️ 警告: 航線穿過防空威脅區，承受風險！`;
             }
 
             totalScore += scoreAdd;
             scoreDisplay.textContent = totalScore;
+
+            // 檢查是否所有目標都已被清除
+            const allDestroyed = mapData.targets.every(t => t.destroyed);
+            if (allDestroyed) {
+                isGameOver = true;
+                resultText += `\n\n🎉 【任務圓滿成功 (MISSION ACCOMPLISHED)】\n所有敵方目標已全數肅清！總得分: ${totalScore}`;
+                scoreClose.textContent = "重新開始新任務 / NEW MISSION";
+            } else {
+                scoreClose.textContent = "確認 / CONTINUE";
+            }
+
             scoreDesc.innerText = resultText;
             scoreModal.classList.remove('hidden');
         }
@@ -414,7 +491,7 @@
                 <div><strong>4. Target Description:</strong> ${tgt.name} (${tgt.type})</div>
                 <div><strong>5. Target Location:</strong> ${tgt.grid}</div>
                 <div><strong>6. Marks:</strong> WP / IR Pointer</div>
-                <div><strong>7. Friendlies:</strong> ALPHA 1-1 (SOUTH 600m)</div>
+                <div><strong>7. Friendlies:</strong> ALPHA 1-1</div>
                 <div><strong>8. Egress:</strong> NORTH via EGRESS</div>
             `;
             targetModal.classList.remove('hidden');
@@ -422,6 +499,8 @@
 
         modalClose.addEventListener('click', () => {
             targetModal.classList.add('hidden');
+            selectedTarget = null;
+            drawMap();
         });
 
         document.querySelectorAll('.weapon-btn').forEach(btn => {
@@ -438,6 +517,14 @@
 
         scoreClose.addEventListener('click', () => {
             scoreModal.classList.add('hidden');
+            selectedTarget = null;
+            if (isGameOver) {
+                isGameOver = false;
+                totalScore = 0;
+                scoreDisplay.textContent = totalScore;
+                generateRandomScenario();
+            }
+            drawMap();
         });
 
         canvas.addEventListener('mousedown', (e) => { isDragging = true; startPan = { x: e.clientX - camera.x, y: e.clientY - camera.y }; });
@@ -452,6 +539,8 @@
         document.getElementById('btn-zoom-out').addEventListener('click', () => { camera.zoom = Math.max(camera.minZoom, camera.zoom - 0.2); drawMap(); });
         document.getElementById('btn-reset').addEventListener('click', () => { camera.x = 0; camera.y = 0; camera.zoom = 1; drawMap(); });
 
+        // 啟動時先隨機生成地圖並初始化
+        generateRandomScenario();
         initCanvas();
     </script>
 </body>
