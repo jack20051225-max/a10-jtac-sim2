@@ -7,8 +7,8 @@
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; user-select: none; -webkit-user-select: none; }
         body, html { width: 100%; height: 100%; overflow: hidden; background-color: #050b08; font-family: 'Courier New', Courier, monospace; color: #00ff66; }
-        #game-container { display: flex; flex-direction: column; width: 100vw; height: 100vh; }
-        #ui-header { display: flex; justify-content: space-around; align-items: center; height: 32px; background: #0a1610; border-bottom: 2px solid #005522; font-size: 11px; font-weight: bold; z-index: 10; flex-shrink: 0; }
+        #game-container { display: flex; flex-direction: column; width: 100vw; height: 100vh; position: relative; }
+        #ui-header { display: flex; justify-content: space-around; align-items: center; height: 36px; background: #0a1610; border-bottom: 2px solid #005522; font-size: 11px; font-weight: bold; z-index: 10; flex-shrink: 0; }
         .label { color: #00aa44; }
         .green { color: #00ff66; }
         #canvas-wrapper { flex: 1; position: relative; background: #020604; overflow: hidden; }
@@ -17,17 +17,33 @@
         #map-controls button { width: 40px; height: 40px; background: rgba(10, 22, 16, 0.85); border: 1px solid #00ff66; color: #00ff66; font-size: 16px; font-weight: bold; border-radius: 4px; cursor: pointer; }
         #map-controls button:active { background: #00ff66; color: #000; }
         .alert-box { position: absolute; top: 10px; left: 50%; transform: translateX(-50%); background: rgba(180, 0, 0, 0.9); color: #fff; border: 1px solid #ff4444; padding: 6px 12px; font-size: 11px; font-weight: bold; border-radius: 4px; z-index: 6; text-align: center; width: 85%; }
-        .hidden { display: none; }
-        
-        /* 重新調整下方面板排版，確保按鈕必定顯示 */
-        #ui-kneeboard { height: 210px; background: #08120c; border-top: 2px solid #005522; padding: 10px; display: flex; flex-direction: column; gap: 6px; z-index: 10; flex-shrink: 0; }
-        .kneeboard-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #003311; padding-bottom: 4px; }
-        .kneeboard-title { font-size: 11px; color: #00aa44; font-weight: bold; }
-        .status-tag { font-size: 10px; color: #ffcc00; }
-        #kneeboard-content { font-size: 11px; line-height: 1.4; color: #00dd55; flex: 1; display: flex; flex-direction: column; justify-content: space-between; }
-        .hint-text { color: #008833; font-style: italic; margin-top: 10px; }
-        .brief-btn { margin-top: 6px; width: 100%; padding: 12px; background: #007733; border: 1px solid #00ff66; color: #ffffff; font-family: inherit; font-weight: bold; font-size: 13px; border-radius: 4px; cursor: pointer; }
-        .brief-btn:active { background: #00ff66; color: #000; }
+        .hidden { display: none !important; }
+
+        /* 懸浮目標資訊視窗 */
+        #target-modal {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 90%;
+            max-width: 380px;
+            background: rgba(8, 18, 12, 0.95);
+            border: 2px solid #00ff66;
+            border-radius: 8px;
+            padding: 12px;
+            box-shadow: 0 0 15px rgba(0, 255, 102, 0.3);
+            z-index: 20;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .modal-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #005522; padding-bottom: 4px; }
+        .modal-title { color: #ffff00; font-weight: bold; font-size: 13px; }
+        .close-btn { background: none; border: none; color: #ff5555; font-size: 16px; font-weight: bold; cursor: pointer; padding: 0 5px; }
+        .modal-body { font-size: 11px; line-height: 1.5; color: #00dd55; }
+        .modal-body div { margin-bottom: 3px; }
+        .action-btn { width: 100%; padding: 12px; background: #007733; border: 1px solid #00ff66; color: #ffffff; font-family: inherit; font-weight: bold; font-size: 13px; border-radius: 4px; cursor: pointer; margin-top: 4px; }
+        .action-btn:active { background: #00ff66; color: #000; }
     </style>
 </head>
 <body>
@@ -48,27 +64,28 @@
             <div id="danger-alert" class="alert-box hidden">⚠️ WARNING: FLIGHT PATH CROSSES SAM THREAT ZONE!</div>
         </main>
 
-        <footer id="ui-kneeboard">
-            <div class="kneeboard-header">
-                <span class="kneeboard-title">JTAC KNEEBOARD (9-LINE)</span>
-                <span id="target-status" class="status-tag">READY</span>
+        <!-- 點擊目標後彈出的視窗 -->
+        <div id="target-modal" class="hidden">
+            <div class="modal-header">
+                <span id="modal-title" class="modal-title">TARGET LOCKED: OBJ-01</span>
+                <button id="modal-close" class="close-btn">✕</button>
             </div>
-            <div id="kneeboard-content">
-                <div id="target-details">
-                    <p class="hint-text">點擊地圖上的紅圈目標 (OBJ-01 ~ 03) 開始規劃...</p>
-                </div>
-                <button id="main-action-btn" class="brief-btn">► TRANSMIT 9-LINE TO HOG-1</button>
+            <div id="modal-body" class="modal-body">
+                <!-- 內容動態生成 -->
             </div>
-        </footer>
+            <button id="modal-action-btn" class="action-btn">► TRANSMIT 9-LINE TO HOG-1</button>
+        </div>
     </div>
 
     <script>
         const canvas = document.getElementById('tactical-map');
         const ctx = canvas.getContext('2d');
         const alertBox = document.getElementById('danger-alert');
-        const targetDetails = document.getElementById('target-details');
-        const targetStatus = document.getElementById('target-status');
-        const mainActionBtn = document.getElementById('main-action-btn');
+        const targetModal = document.getElementById('target-modal');
+        const modalTitle = document.getElementById('modal-title');
+        const modalBody = document.getElementById('modal-body');
+        const modalClose = document.getElementById('modal-close');
+        const modalActionBtn = document.getElementById('modal-action-btn');
 
         let camera = { x: 0, y: 0, zoom: 1, minZoom: 0.5, maxZoom: 2.5 };
         let isDragging = false;
@@ -236,32 +253,35 @@
             let clicked = null;
             mapData.targets.forEach(tgt => {
                 const dist = Math.hypot(tgt.x - mapX, tgt.y - mapY);
-                if (dist < 25 / camera.zoom) clicked = tgt;
+                if (dist < 30 / camera.zoom) clicked = tgt;
             });
 
             if (clicked) {
                 selectedTarget = clicked;
-                updateKneeboard(clicked);
+                showModal(clicked);
                 drawMap();
             }
         });
 
-        function updateKneeboard(tgt) {
-            targetStatus.textContent = `LOCKED: ${tgt.code}`;
-            targetStatus.style.color = "#ffff00";
-
-            targetDetails.innerHTML = `
-                <div><strong>1-3. IP/Hdg:</strong> DIXIE / 125° / 4.2 NM</div>
-                <div><strong>4-6. ELEV/TGT/GRID:</strong> ${tgt.elev} / ${tgt.name} / ${tgt.grid}</div>
+        function showModal(tgt) {
+            modalTitle.textContent = `TARGET LOCKED: ${tgt.code}`;
+            modalBody.innerHTML = `
+                <div><strong>1-3. IP/Hdg/Dist:</strong> DIXIE / 125° / 4.2 NM</div>
+                <div><strong>4. ELEVATION:</strong> ${tgt.elev}</div>
+                <div><strong>5. TARGET:</strong> ${tgt.name} (${tgt.type})</div>
+                <div><strong>6. LOCATION:</strong> ${tgt.grid}</div>
                 <div><strong>8. FRIENDLIES:</strong> ALPHA 1-1 (SOUTH 600m)</div>
             `;
+            targetModal.classList.remove('hidden');
         }
 
-        mainActionBtn.addEventListener('click', () => {
+        modalClose.addEventListener('click', () => {
+            targetModal.classList.add('hidden');
+        });
+
+        modalActionBtn.addEventListener('click', () => {
             if (selectedTarget) {
                 alert(`[RADIO TRANSMISSION]\nAlpha-1 to Hog-1: 9-Line Briefing transmitted for ${selectedTarget.code}.\nHog-1 is Inbound!`);
-            } else {
-                alert("請先在地圖上點擊選擇一個目標！");
             }
         });
 
