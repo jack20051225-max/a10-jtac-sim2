@@ -3,15 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>A-10 CAS JTAC Tactical Simulator - 9-Line & Weapons</title>
+    <title>A-10 CAS JTAC Tactical Simulator - Fix</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; user-select: none; -webkit-user-select: none; }
         body, html { width: 100%; height: 100%; overflow: hidden; background-color: #050b08; font-family: 'Courier New', Courier, monospace; color: #00ff66; }
-        #game-container { display: flex; flex-direction: column; width: 100vw; height: 100vh; position: relative; }
-        #ui-header { display: flex; justify-content: space-around; align-items: center; height: 36px; background: #0a1610; border-bottom: 2px solid #005522; font-size: 11px; font-weight: bold; z-index: 10; flex-shrink: 0; }
+        #game-container { width: 100vw; height: 100vh; position: relative; display: block; }
+        #ui-header { position: absolute; top: 0; left: 0; width: 100%; display: flex; justify-content: space-around; align-items: center; height: 36px; background: #0a1610; border-bottom: 2px solid #005522; font-size: 11px; font-weight: bold; z-index: 10; }
         .label { color: #00aa44; }
         .green { color: #00ff66; }
-        #canvas-wrapper { flex: 1; position: relative; background: #020604; overflow: hidden; }
+        #canvas-wrapper { position: absolute; top: 36px; left: 0; right: 0; bottom: 0; background: #020604; overflow: hidden; }
         canvas { display: block; width: 100%; height: 100%; }
         #map-controls { position: absolute; right: 10px; top: 10px; display: flex; flex-direction: column; gap: 6px; z-index: 5; }
         #map-controls button { width: 40px; height: 40px; background: rgba(10, 22, 16, 0.85); border: 1px solid #00ff66; color: #00ff66; font-size: 16px; font-weight: bold; border-radius: 4px; cursor: pointer; }
@@ -19,7 +19,7 @@
         .alert-box { position: absolute; top: 10px; left: 50%; transform: translateX(-50%); background: rgba(180, 0, 0, 0.9); color: #fff; border: 1px solid #ff4444; padding: 6px 12px; font-size: 11px; font-weight: bold; border-radius: 4px; z-index: 6; text-align: center; width: 85%; }
         .hidden { display: none !important; }
 
-        /* 9-Line 戰術簡報與武器選擇視窗 (手機防裁切優化版) */
+        /* 9-Line 戰術簡報與武器選擇視窗 */
         #target-modal {
             position: absolute;
             bottom: 30px;
@@ -161,7 +161,7 @@
         let isDragging = false;
         let startPan = { x: 0, y: 0 };
         let selectedTarget = null;
-        let selectedWeapon = 'mav'; // 預設小牛
+        let selectedWeapon = 'mav';
         let attackAnimation = null;
         let totalScore = 0;
 
@@ -181,8 +181,9 @@
         };
 
         function resizeCanvas() {
-            canvas.width = canvas.parentElement.clientWidth;
-            canvas.height = canvas.parentElement.clientHeight;
+            const wrapper = document.getElementById('canvas-wrapper');
+            canvas.width = wrapper.clientWidth;
+            canvas.height = wrapper.clientHeight;
             drawMap();
         }
         window.addEventListener('resize', resizeCanvas);
@@ -392,8 +393,6 @@
                     attackAnimation = null;
                     a10StatusEl.textContent = "MISSION COMPLETE";
                     a10StatusEl.className = "green";
-                    
-                    // 檢查武器適配性給予分數評價
                     evaluateAttack(selectedTarget, selectedWeapon);
                     drawMap();
                 }
@@ -437,7 +436,7 @@
             let clicked = null;
             mapData.targets.forEach(tgt => {
                 const dist = Math.hypot(tgt.x - mapX, tgt.y - mapY);
-                if (dist < 30 / camera.zoom) clicked = tgt;
+                if (dist < 35 / camera.zoom) clicked = tgt;
             });
 
             if (clicked && !clicked.destroyed) {
@@ -453,4 +452,4 @@
                 <div><strong>1. IP/Heading:</strong> DIXIE / 125°</div>
                 <div><strong>2. Distance:</strong> 4.2 NM</div>
                 <div><strong>3. Target Elevation:</strong> ${tgt.elev}</div>
-                <div><str
+                <div><stron
