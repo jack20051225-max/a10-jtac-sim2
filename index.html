@@ -60,6 +60,7 @@
 <body>
     <div id="game-container">
         <header id="ui-header">
+            <div><span class="label">VER:</span> <span id="ver-display" class="yellow">v1.5</span></div>
             <div><span class="label">WAVE:</span> <span id="wave-display" class="green">1/3</span></div>
             <div><span class="label">MAV:</span> <span id="mav-count" class="green">4</span> | <span class="label">GBU:</span> <span id="gbu-count" class="green">2</span></div>
             <div><span class="label">SCORE:</span> <span id="score-display" class="green">0</span></div>
@@ -115,7 +116,6 @@
             <button class="score-close-btn" id="score-close">確認 / CONTINUE</button>
         </div>
     </div>
-
     <script>
         const canvas = document.getElementById('tactical-map');
         const ctx = canvas.getContext('2d');
@@ -172,7 +172,6 @@
             noFlyZones: [], 
             targets: []
         };
-
         function generateCampaignWave() {
             mapData.ip = { x: -180, y: 130, name: "IP BAKER" };
             mapData.egress = { x: 180, y: 130, name: "EGRESS ALPHA" };
@@ -354,3 +353,173 @@
             if (segIndex >= totalSegs - 1 && t > 0.8) {
                 target.destroyed = true;
                 ctx.fillStyle = "rgba(255, 120, 0, 0.9)";
+                ctx.beginPath(); ctx.arc(target.x, target.y, (14 + Math.random() * 6) / camera.zoom, 0, Math.PI * 2); ctx.fill();
+            }
+            ctx.save();
+            ctx.translate(currentX, currentY);
+            ctx.rotate(angle);
+            ctx.fillStyle = "#00ff66";
+            ctx.beginPath();
+            ctx.moveTo(9 / camera.zoom, 0);
+            ctx.lineTo(-7 / camera.zoom, -5 / camera.zoom);
+            ctx.lineTo(-3 / camera.zoom, 0);
+            ctx.lineTo(-7 / camera.zoom, 5 / camera.zoom);
+            ctx.closePath();
+            ctx.fill();
+            ctx.restore();
+        }
+
+        function startAttackRun() {
+            if (!selectedTarget) return;
+            if (selectedWeapon === 'mav' && gameState.ammoMav <= 0) { alert("⚠️ AGM-65 彈藥耗盡！"); return; }
+            if (selectedWeapon === 'bomb' && gameState.ammoGbu <= 0) { alert("⚠️ GBU-12 彈藥耗盡！"); return; }
+
+            if (selectedWeapon === 'mav') gameState.ammoMav--;
+            if (selectedWeapon === 'bomb') gameState.ammoGbu--;
+            updateUIStats();
+
+            targetModal.classList.add('hidden');
+            alertBox.classList.add('hidden');
+
+            let fullPath = [mapData.ip, ...mapData.waypoints, selectedTarget, mapData.egress];
+            let startTime = null, duration = 4500;
+            attackAnimation = { path: fullPath, progress: 0, target: selectedTarget };
+
+            function step(timestamp) {
+                if (!startTime) startTime = timestamp;
+                attackAnimation.progress = Math.min(1, (timestamp - startTime) / duration);
+                drawMap();
+                if (attackAnimation.progress < 1) {
+                    requestAnimationFrame(step);
+                } else {
+                    attackAnimation = null;
+                    evaluateAttack(selectedTarget, selectedWeapon);
+                    drawMap();
+                }
+            }
+            requestAnimationFrame(step);
+        }
+
+        function evaluateAttack(tgt, weapon) {
+            let scoreAdd = 0, resultText = "";
+            let fullPath = [mapData.ip, ...mapData.waypoints, tgt, mapData.egress];
+            let hasDanger = false;
+            for (let i = 0; i < fullPath.length - 1; i++) {
+                if (checkSegmentIntersection(fullPath[i], fullPath[i+1])) hasDanger = true;
+            }
+
+            if (tgt.bestWeapon === weapon) {
+                scoreAdd = 150;
+                resultText = `🎯 【完美武器運用】\n- 目標: ${tgt.code} (${tgt.name})\n- 雷射編碼 PRF ${tgt.prf} 鎖定成功！\n- 獲得分數: +150 分`;
+            } else {
+                scoreAdd = 60;
+                resultText = `⚠️ 【次佳武器配置】\n- 目標: ${tgt.code} (${tgt.name})\n- 效率一般。\n- 獲得分數: +60 分`;
+            }
+
+            if (hasDanger) {
+                scoreAdd -= 50;
+                resultText += `\n🚨 【防空警報】航線穿過禁飛區遭攔截！(-50 分)`;
+            } else {
+                scoreAdd += 60;
+                resultText += `\n🌟 【完美地形匿蹤獎勵】成功避開所有威脅！(+60 分)`;
+            }
+
+            gameState.score = Math.max(0, gameState.score + scoreAdd);
+            scoreDisplay.textContent = gameState.score;
+
+            if (mapData.targets.every(t => t.destroyed)) {
+                if (gameState.wave < gameState.maxWaves) {
+                    gameState.wave++;
+                    resultText += `\n\n🌟 【WAVE ${gameState.wave-1} 達成】\n進入下一作戰區！`;
+                    gameState.ammoMav = Math.min(4, gameState.ammoMav + 2);
+                    gameState.ammoGbu = Math.min(3, gameState.ammoGbu + 1);
+                    generateCampaignWave();
+                    scoreClose.textContent = "進入下一波作戰 / NEXT WAVE";
+                } else {
+                    gameState.isGameOver = true;
+                    resultText += `\n\n🏆 【全戰役勝利】\n總分: ${gameState.score}`;
+                    scoreClose.textContent = "重新開始 / NEW CAMPAIGN";
+                }
+            } else {
+                scoreClose.textContent = "確認 / CONTINUE";
+            }
+
+            scoreDesc.innerText = resultText;
+            scoreModal.classList.remove('hidden');
+        }
+
+        canvas.addEventListener('click', (e) => {
+            if (attackAnimation || !scoreModal.classList.contains('hidden')) return;
+            const rect = canvas.getBoundingClientRect();
+            const mapX = (e.clientX - rect.left - canvas.width / 2 - camera.x) / camera.zoom;
+            const mapY = (e.clientY - rect.top - canvas.height / 2 - camera.y) / camera.zoom;
+
+            if (currentTool === 'ip') { mapData.ip.x = mapX; mapData.ip.y = mapY; setTool('target'); drawMap(); return; }
+            if (currentTool === 'egress') { mapData.egress.x = mapX; mapData.egress.y = mapY; setTool('target'); drawMap(); return; }
+            if (currentTool === 'waypoint') { mapData.waypoints.push({ x: mapX, y: mapY }); drawMap(); return; }
+
+            let clicked = null;
+            mapData.targets.forEach(tgt => {
+                if (Math.hypot(tgt.x - mapX, tgt.y - mapY) < 40 / camera.zoom) clicked = tgt;
+            });
+
+            if (clicked && !clicked.destroyed) {
+                selectedTarget = clicked;
+                modalTitle.textContent = `9-LINE BRIEFING: ${clicked.code}`;
+                tgpInfo.textContent = `FLIR/WH || TGP POINT TRK || PRF CODE: ${clicked.prf}`;
+                modalBody.innerHTML = `
+                    <div><strong>1. Ingress IP:</strong> ${mapData.ip.name}</div>
+                    <div><strong>2. Waypoints:</strong> ${mapData.waypoints.length} WP Active</div>
+                    <div><strong>3. Target Elevation:</strong> ${clicked.elev}</div>
+                    <div><strong>4. Target Description:</strong> ${clicked.name}</div>
+                    <div><strong>5. Coordinates:</strong> ${clicked.grid}</div>
+                    <div><strong>6. Laser Code:</strong> PRF ${clicked.prf}</div>
+                    <div><strong>7. JTAC Contact:</strong> ${mapData.alphaTeam.name}</div>
+                    <div><strong>8. Egress Point:</strong> ${mapData.egress.name}</div>
+                `;
+                targetModal.classList.remove('hidden');
+                drawMap();
+            }
+        });
+
+        modalClose.addEventListener('click', () => { targetModal.classList.add('hidden'); selectedTarget = null; drawMap(); });
+
+        document.querySelectorAll('.weapon-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                document.querySelectorAll('.weapon-btn').forEach(b => b.classList.remove('selected'));
+                e.target.classList.add('selected');
+                selectedWeapon = e.target.getAttribute('data-weapon');
+            });
+        });
+
+        modalActionBtn.addEventListener('click', () => { startAttackRun(); });
+
+        scoreClose.addEventListener('click', () => {
+            scoreModal.classList.add('hidden');
+            selectedTarget = null;
+            if (gameState.isGameOver) {
+                gameState.isGameOver = false;
+                gameState.score = 0; gameState.wave = 1;
+                gameState.ammoMav = 4; gameState.ammoGbu = 2;
+                generateCampaignWave();
+            }
+            drawMap();
+        });
+
+        canvas.addEventListener('mousedown', (e) => { isDragging = true; startPan = { x: e.clientX - camera.x, y: e.clientY - camera.y }; });
+        window.addEventListener('mousemove', (e) => { if (isDragging) { camera.x = e.clientX - startPan.x; camera.y = e.clientY - startPan.y; drawMap(); } });
+        window.addEventListener('mouseup', () => isDragging = false);
+
+        canvas.addEventListener('touchstart', (e) => { if (e.touches.length === 1) { isDragging = true; startPan = { x: e.touches[0].clientX - camera.x, y: e.touches[0].clientY - camera.y }; } }, { passive: true });
+        canvas.addEventListener('touchmove', (e) => { if (isDragging && e.touches.length === 1) { camera.x = e.touches[0].clientX - startPan.x; camera.y = e.touches[0].clientY - startPan.y; drawMap(); } }, { passive: true });
+        canvas.addEventListener('touchend', () => isDragging = false);
+
+        document.getElementById('btn-zoom-in').addEventListener('click', () => { camera.zoom = Math.min(camera.maxZoom, camera.zoom + 0.2); drawMap(); });
+        document.getElementById('btn-zoom-out').addEventListener('click', () => { camera.zoom = Math.max(camera.minZoom, camera.zoom - 0.2); drawMap(); });
+        document.getElementById('btn-reset').addEventListener('click', () => { camera.x = 0; camera.y = 0; camera.zoom = 1; drawMap(); });
+
+        generateCampaignWave();
+        initCanvas();
+    </script>
+</body>
+</html>
