@@ -9,58 +9,54 @@
         body, html { width: 100%; height: 100%; overflow: hidden; background-color: #020503; font-family: 'Courier New', Courier, monospace; color: #00ff66; }
         #game-container { width: 100vw; height: 100vh; position: relative; background: #010302; }
         
-        #ui-header { position: absolute; top: 0; left: 0; width: 100%; height: 45px; background: #06100a; border-bottom: 2px solid #004422; display: flex; justify-content: space-around; align-items: center; font-size: 10px; font-weight: bold; z-index: 10; }
+        #ui-header { position: absolute; top: 0; left: 0; width: 100%; height: 40px; background: #06100a; border-bottom: 2px solid #004422; display: flex; justify-content: space-around; align-items: center; font-size: 9.5px; font-weight: bold; z-index: 10; }
         .label { color: #008844; }
         .green { color: #00ff66; }
         .yellow { color: #ffff00; }
         .red { color: #ff4444; }
 
-        #canvas-wrapper { position: absolute; top: 45px; left: 0; right: 0; bottom: 0; background: #010302; }
+        #canvas-wrapper { position: absolute; top: 40px; left: 0; right: 0; bottom: 0; background: #010302; }
         canvas { display: block; width: 100%; height: 100%; }
 
-        #tactical-toolbar { position: absolute; top: 10px; left: 10px; display: flex; flex-direction: column; gap: 4px; z-index: 5; }
-        .tool-btn { padding: 6px 9px; background: rgba(6, 16, 10, 0.95); border: 1px solid #008844; color: #008844; font-family: inherit; font-size: 8.5px; font-weight: bold; border-radius: 4px; cursor: pointer; text-align: left; }
-        .tool-btn.active { border-color: #00ff66; color: #00ff66; background: rgba(0, 85, 34, 0.6); box-shadow: 0 0 8px rgba(0,255,102,0.4); }
+        #tactical-toolbar { position: absolute; top: 8px; left: 8px; display: flex; flex-direction: column; gap: 3px; z-index: 5; }
+        .tool-btn { padding: 5px 8px; background: rgba(6, 16, 10, 0.9); border: 1px solid #008844; color: #008844; font-family: inherit; font-size: 8px; font-weight: bold; border-radius: 3px; cursor: pointer; text-align: left; }
+        .tool-btn.active { border-color: #00ff66; color: #00ff66; background: rgba(0, 85, 34, 0.7); box-shadow: 0 0 6px rgba(0,255,102,0.4); }
 
-        #map-controls { position: absolute; right: 10px; top: 10px; display: flex; flex-direction: column; gap: 6px; z-index: 5; }
-        #map-controls button { width: 40px; height: 40px; background: rgba(6, 16, 10, 0.9); border: 1px solid #00ff66; color: #00ff66; font-size: 16px; font-weight: bold; border-radius: 4px; cursor: pointer; }
+        #map-controls { position: absolute; right: 8px; top: 8px; display: flex; flex-direction: column; gap: 5px; z-index: 5; }
+        #map-controls button { width: 36px; height: 36px; background: rgba(6, 16, 10, 0.9); border: 1px solid #00ff66; color: #00ff66; font-size: 14px; font-weight: bold; border-radius: 4px; cursor: pointer; }
         
-        .alert-box { position: absolute; top: 10px; left: 50%; transform: translateX(-50%); background: rgba(180, 0, 0, 0.95); color: #fff; border: 1px solid #ff0000; padding: 5px 10px; font-size: 9.5px; font-weight: bold; border-radius: 4px; z-index: 6; text-align: center; width: 65%; pointer-events: none; }
+        .alert-box { position: absolute; top: 8px; left: 50%; transform: translateX(-50%); background: rgba(180, 0, 0, 0.95); color: #fff; border: 1px solid #ff0000; padding: 4px 8px; font-size: 9px; font-weight: bold; border-radius: 3px; z-index: 6; text-align: center; width: 60%; pointer-events: none; }
         .alert-box.danger { animation: flash 0.8s infinite; }
         .alert-box.safe { background: rgba(0, 100, 50, 0.95); border-color: #00ff66; }
         @keyframes flash { 0% { opacity: 1; } 50% { opacity: 0.3; } 100% { opacity: 1; } }
         .hidden { display: none !important; }
 
-        #target-modal { position: absolute; bottom: 15px; left: 50%; transform: translateX(-50%); width: 95%; max-width: 410px; background: rgba(4, 12, 7, 0.98); border: 2px solid #00ff66; border-radius: 6px; padding: 10px; z-index: 20; display: flex; flex-direction: column; gap: 6px; box-shadow: 0 0 15px rgba(0, 255, 102, 0.3); }
-        .modal-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #004422; padding-bottom: 4px; }
-        .modal-title { color: #ffff00; font-weight: bold; font-size: 11px; }
-        .close-btn { background: none; border: none; color: #ff5555; font-size: 16px; font-weight: bold; cursor: pointer; }
+        #target-modal { position: absolute; bottom: 8px; left: 50%; transform: translateX(-50%); width: 96%; max-width: 400px; background: rgba(2, 8, 4, 0.92); border: 1.5px solid #00ff66; border-radius: 5px; padding: 6px 8px; z-index: 20; display: flex; flex-direction: column; gap: 4px; box-shadow: 0 0 10px rgba(0, 255, 102, 0.2); }
+        .modal-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #004422; padding-bottom: 2px; }
+        .modal-title { color: #ffff00; font-weight: bold; font-size: 10px; }
+        .close-btn { background: none; border: none; color: #ff5555; font-size: 14px; font-weight: bold; cursor: pointer; }
         
-        .tgp-preview { width: 100%; height: 85px; background: #000; border: 1px solid #005522; position: relative; overflow: hidden; display: flex; justify-content: center; align-items: center; }
-        .tgp-reticle { position: absolute; width: 34px; height: 34px; border: 1px dashed #00ff66; border-radius: 50%; }
-        .tgp-text { position: absolute; bottom: 3px; left: 5px; font-size: 8px; color: #00ff66; background: rgba(0,0,0,0.8); padding: 2px; }
+        .modal-body { font-size: 8px; line-height: 1.3; color: #00cc44; background: #010402; padding: 4px; border: 1px solid #003311; display: grid; grid-template-columns: 1fr 1fr; gap: 2px 6px; }
+        .modal-body div { margin-bottom: 0; }
 
-        .modal-body { font-size: 9px; line-height: 1.35; color: #00cc44; background: #010603; padding: 5px; border: 1px solid #003311; }
-        .modal-body div { margin-bottom: 1px; }
-
-        .weapon-select-section { border-top: 1px dashed #004422; padding-top: 4px; }
-        .weapon-label { color: #ffff00; font-size: 9px; font-weight: bold; margin-bottom: 3px; }
+        .weapon-select-section { border-top: 1px dashed #004422; padding-top: 3px; }
+        .weapon-label { color: #ffff00; font-size: 8px; font-weight: bold; margin-bottom: 2px; }
         .weapon-options { display: flex; gap: 3px; }
-        .weapon-btn { flex: 1; padding: 5px 2px; background: #030d07; border: 1px solid #008844; color: #008844; font-family: inherit; font-size: 8.5px; font-weight: bold; border-radius: 3px; text-align: center; cursor: pointer; }
+        .weapon-btn { flex: 1; padding: 4px 2px; background: #030d07; border: 1px solid #008844; color: #008844; font-family: inherit; font-size: 8px; font-weight: bold; border-radius: 3px; text-align: center; cursor: pointer; }
         .weapon-btn.selected { background: #005522; border-color: #00ff66; color: #ffffff; }
 
-        .action-btn { width: 100%; padding: 7px; background: #005522; border: 1px solid #00ff66; color: #ffffff; font-family: inherit; font-weight: bold; font-size: 10px; border-radius: 4px; cursor: pointer; margin-top: 2px; }
+        .action-btn { width: 100%; padding: 5px; background: #005522; border: 1px solid #00ff66; color: #ffffff; font-family: inherit; font-weight: bold; font-size: 9px; border-radius: 3px; cursor: pointer; margin-top: 1px; }
 
-        #score-modal { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 88%; max-width: 340px; background: rgba(3, 10, 6, 0.99); border: 2px solid #ffff00; border-radius: 8px; padding: 14px; z-index: 30; text-align: center; }
-        #score-title { color: #ffff00; font-size: 12px; font-weight: bold; margin-bottom: 6px; }
-        #score-desc { color: #00ff66; font-size: 10px; line-height: 1.4; margin-bottom: 10px; text-align: left; background: #010502; padding: 6px; border: 1px solid #004422; }
-        .score-close-btn { width: 100%; padding: 6px; background: #005522; border: 1px solid #ffff00; color: #ffff00; font-family: inherit; font-weight: bold; border-radius: 4px; cursor: pointer; }
+        #score-modal { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 88%; max-width: 340px; background: rgba(3, 10, 6, 0.98); border: 2px solid #ffff00; border-radius: 6px; padding: 12px; z-index: 30; text-align: center; }
+        #score-title { color: #ffff00; font-size: 11px; font-weight: bold; margin-bottom: 5px; }
+        #score-desc { color: #00ff66; font-size: 9.5px; line-height: 1.35; margin-bottom: 8px; text-align: left; background: #010502; padding: 5px; border: 1px solid #004422; white-space: pre-line; }
+        .score-close-btn { width: 100%; padding: 5px; background: #005522; border: 1px solid #ffff00; color: #ffff00; font-family: inherit; font-weight: bold; border-radius: 3px; cursor: pointer; }
     </style>
 </head>
 <body>
     <div id="game-container">
         <header id="ui-header">
-            <div><span class="label">VER:</span> <span id="ver-display" class="yellow">v1.5</span></div>
+            <div><span class="label">VER:</span> <span id="ver-display" class="yellow">v1.6</span></div>
             <div><span class="label">WAVE:</span> <span id="wave-display" class="green">1/3</span></div>
             <div><span class="label">MAV:</span> <span id="mav-count" class="green">4</span> | <span class="label">GBU:</span> <span id="gbu-count" class="green">2</span></div>
             <div><span class="label">SCORE:</span> <span id="score-display" class="green">0</span></div>
@@ -70,11 +66,11 @@
             <canvas id="tactical-map"></canvas>
             
             <div id="tactical-toolbar">
-                <button class="tool-btn active" id="tool-target">🎯 攻擊目標模式</button>
-                <button class="tool-btn" id="tool-ip">📍 設置進場點 (IP)</button>
-                <button class="tool-btn" id="tool-waypoint">➕ 添加航點 (WP)</button>
-                <button class="tool-btn" id="tool-egress">🏁 設置撤出點 (EGRESS)</button>
-                <button class="tool-btn" id="tool-clear-wp" style="color: #ff5555; border-color: #aa2222;">🗑️ 清除中繼航點</button>
+                <button class="tool-btn active" id="tool-target">🎯 攻擊目標</button>
+                <button class="tool-btn" id="tool-ip">📍 設置 IP</button>
+                <button class="tool-btn" id="tool-waypoint">➕ 加航點 WP</button>
+                <button class="tool-btn" id="tool-egress">🏁 設置撤出</button>
+                <button class="tool-btn" id="tool-clear-wp" style="color: #ff5555; border-color: #aa2222;">🗑️ 清除航點</button>
             </div>
 
             <div id="map-controls">
@@ -82,7 +78,7 @@
                 <button id="btn-zoom-out">-</button>
                 <button id="btn-reset">CEN</button>
             </div>
-            <div id="danger-alert" class="alert-box hidden">🚨 RWR: 航線穿過禁飛/防空區！</div>
+            <div id="danger-alert" class="alert-box hidden">🚨 RWR: 航線穿過防空區！</div>
         </div>
 
         <div id="target-modal" class="hidden">
@@ -90,14 +86,7 @@
                 <span id="modal-title" class="modal-title">9-LINE BRIEFING</span>
                 <button id="modal-close" class="close-btn">✕</button>
             </div>
-            
-            <div class="tgp-preview" id="tgp-container">
-                <div class="tgp-reticle"></div>
-                <div class="tgp-text" id="tgp-info">FLIR/WH || TGP POINT TRK || PRF: 1688</div>
-            </div>
-
             <div id="modal-body" class="modal-body"></div>
-            
             <div class="weapon-select-section">
                 <div class="weapon-label">ORDNANCE SELECT / 武器掛載選擇:</div>
                 <div class="weapon-options">
@@ -106,7 +95,6 @@
                     <button class="weapon-btn" data-weapon="gun">30mm 機砲</button>
                 </div>
             </div>
-
             <button id="modal-action-btn" class="action-btn">► TRANSMIT & CLEARED HOT</button>
         </div>
 
@@ -134,7 +122,6 @@
         const scoreModal = document.getElementById('score-modal');
         const scoreDesc = document.getElementById('score-desc');
         const scoreClose = document.getElementById('score-close');
-        const tgpInfo = document.getElementById('tgp-info');
 
         let currentTool = 'target';
         document.getElementById('tool-target').addEventListener('click', () => setTool('target'));
@@ -172,6 +159,7 @@
             noFlyZones: [], 
             targets: []
         };
+
         function generateCampaignWave() {
             mapData.ip = { x: -180, y: 130, name: "IP BAKER" };
             mapData.egress = { x: 180, y: 130, name: "EGRESS ALPHA" };
@@ -216,7 +204,7 @@
 
         function initCanvas() {
             canvas.width = window.innerWidth;
-            canvas.height = window.innerHeight - 45;
+            canvas.height = window.innerHeight - 40;
             drawMap();
         }
 
@@ -329,11 +317,11 @@
             }
             ctx.setLineDash([]);
             if (hasDanger) {
-                alertBox.textContent = "🚨 RWR: 航線穿過禁飛/防空區！請新增航點繞路";
+                alertBox.textContent = "🚨 RWR: 航線穿過防空區！請新增航點繞路";
                 alertBox.className = "alert-box danger";
                 alertBox.classList.remove('hidden');
             } else {
-                alertBox.textContent = "✅ 戰術航線安全：成功利用地形通道避開威脅";
+                alertBox.textContent = "✅ 戰術航線安全：成功避開威脅";
                 alertBox.className = "alert-box safe";
                 alertBox.classList.remove('hidden');
             }
@@ -410,18 +398,18 @@
 
             if (tgt.bestWeapon === weapon) {
                 scoreAdd = 150;
-                resultText = `🎯 【完美武器運用】\n- 目標: ${tgt.code} (${tgt.name})\n- 雷射編碼 PRF ${tgt.prf} 鎖定成功！\n- 獲得分數: +150 分`;
+                resultText = `🎯 【完美武器運用】\n- 目標: ${tgt.code} (${tgt.name})\n- PRF ${tgt.prf} 鎖定成功！ (+150分)`;
             } else {
                 scoreAdd = 60;
-                resultText = `⚠️ 【次佳武器配置】\n- 目標: ${tgt.code} (${tgt.name})\n- 效率一般。\n- 獲得分數: +60 分`;
+                resultText = `⚠️ 【次佳武器配置】\n- 目標: ${tgt.code} (${tgt.name})\n- 效率一般 (+60分)`;
             }
 
             if (hasDanger) {
                 scoreAdd -= 50;
-                resultText += `\n🚨 【防空警報】航線穿過禁飛區遭攔截！(-50 分)`;
+                resultText += `\n🚨 【防空警報】航線穿過禁飛區！(-50分)`;
             } else {
                 scoreAdd += 60;
-                resultText += `\n🌟 【完美地形匿蹤獎勵】成功避開所有威脅！(+60 分)`;
+                resultText += `\n🌟 【地形匿蹤獎勵】成功避開威脅！(+60分)`;
             }
 
             gameState.score = Math.max(0, gameState.score + scoreAdd);
@@ -465,17 +453,16 @@
 
             if (clicked && !clicked.destroyed) {
                 selectedTarget = clicked;
-                modalTitle.textContent = `9-LINE BRIEFING: ${clicked.code}`;
-                tgpInfo.textContent = `FLIR/WH || TGP POINT TRK || PRF CODE: ${clicked.prf}`;
+                modalTitle.textContent = `9-LINE: ${clicked.code}`;
                 modalBody.innerHTML = `
-                    <div><strong>1. Ingress IP:</strong> ${mapData.ip.name}</div>
-                    <div><strong>2. Waypoints:</strong> ${mapData.waypoints.length} WP Active</div>
-                    <div><strong>3. Target Elevation:</strong> ${clicked.elev}</div>
-                    <div><strong>4. Target Description:</strong> ${clicked.name}</div>
-                    <div><strong>5. Coordinates:</strong> ${clicked.grid}</div>
-                    <div><strong>6. Laser Code:</strong> PRF ${clicked.prf}</div>
-                    <div><strong>7. JTAC Contact:</strong> ${mapData.alphaTeam.name}</div>
-                    <div><strong>8. Egress Point:</strong> ${mapData.egress.name}</div>
+                    <div><strong>1. IP:</strong> ${mapData.ip.name}</div>
+                    <div><strong>2. WP:</strong> ${mapData.waypoints.length} Active</div>
+                    <div><strong>3. Elev:</strong> ${clicked.elev}</div>
+                    <div><strong>4. Desc:</strong> ${clicked.name}</div>
+                    <div><strong>5. Grid:</strong> ${clicked.grid}</div>
+                    <div><strong>6. Laser:</strong> PRF ${clicked.prf}</div>
+                    <div><strong>7. JTAC:</strong> ${mapData.alphaTeam.name}</div>
+                    <div><strong>8. Egress:</strong> ${mapData.egress.name}</div>
                 `;
                 targetModal.classList.remove('hidden');
                 drawMap();
@@ -487,8 +474,8 @@
         document.querySelectorAll('.weapon-btn').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 document.querySelectorAll('.weapon-btn').forEach(b => b.classList.remove('selected'));
-                e.target.classList.add('selected');
-                selectedWeapon = e.target.getAttribute('data-weapon');
+                e.currentTarget.classList.add('selected');
+                selectedWeapon = e.currentTarget.getAttribute('data-weapon');
             });
         });
 
