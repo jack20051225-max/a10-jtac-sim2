@@ -19,7 +19,7 @@
         .alert-box { position: absolute; top: 10px; left: 50%; transform: translateX(-50%); background: rgba(180, 0, 0, 0.9); color: #fff; border: 1px solid #ff4444; padding: 6px 12px; font-size: 11px; font-weight: bold; border-radius: 4px; z-index: 6; text-align: center; width: 85%; }
         .hidden { display: none !important; }
 
-        /* 懸浮目標資訊視窗 (手機防裁切優化版) */
+        /* 懸浮目標資訊視窗 */
         #target-modal {
             position: absolute;
             bottom: 40px;
@@ -64,15 +64,12 @@
             <div id="danger-alert" class="alert-box hidden">⚠️ WARNING: FLIGHT PATH CROSSES SAM THREAT ZONE!</div>
         </main>
 
-        <!-- 點擊目標後彈出的視窗 -->
         <div id="target-modal" class="hidden">
             <div class="modal-header">
                 <span id="modal-title" class="modal-title">TARGET LOCKED: OBJ-01</span>
                 <button id="modal-close" class="close-btn">✕</button>
             </div>
-            <div id="modal-body" class="modal-body">
-                <!-- 內容動態生成 -->
-            </div>
+            <div id="modal-body" class="modal-body"></div>
             <button id="modal-action-btn" class="action-btn">► TRANSMIT 9-LINE TO HOG-1</button>
         </div>
     </div>
@@ -86,11 +83,13 @@
         const modalBody = document.getElementById('modal-body');
         const modalClose = document.getElementById('modal-close');
         const modalActionBtn = document.getElementById('modal-action-btn');
+        const a10StatusEl = document.getElementById('a10-status');
 
         let camera = { x: 0, y: 0, zoom: 1, minZoom: 0.5, maxZoom: 2.5 };
         let isDragging = false;
         let startPan = { x: 0, y: 0 };
         let selectedTarget = null;
+        let attackAnimation = null;
 
         const mapData = {
             ip: { x: -200, y: -160, name: "IP DIXIE" },
@@ -101,9 +100,9 @@
                 { id: "SAM-2", x: 150, y: -180, radius: 110, name: "SAM-02 (ZSU-23)" }
             ],
             targets: [
-                { id: 1, code: "OBJ-01", name: "T-72 Tank Platoon", type: "ARMOR", x: -20, y: -30, elev: "450 FT", grid: "NV 341 882" },
-                { id: 2, code: "OBJ-02", name: "Supply Convoy", type: "VEHICLE", x: 40, y: 80, elev: "410 FT", grid: "NV 348 871" },
-                { id: 3, code: "OBJ-03", name: "Mortar Position", type: "INDIRECT FIRE", x: 110, y: -90, elev: "520 FT", grid: "NV 355 893" }
+                { id: 1, code: "OBJ-01", name: "T-72 Tank Platoon", type: "ARMOR", x: -20, y: -30, elev: "450 FT", grid: "NV 341 882", destroyed: false },
+                { id: 2, code: "OBJ-02", name: "Supply Convoy", type: "VEHICLE", x: 40, y: 80, elev: "410 FT", grid: "NV 348 871", destroyed: false },
+                { id: 3, code: "OBJ-03", name: "Mortar Position", type: "INDIRECT FIRE", x: 110, y: -90, elev: "520 FT", grid: "NV 355 893", destroyed: false }
             ]
         };
 
@@ -125,6 +124,7 @@
             drawFlightPath();
             drawFriendly();
             drawTargets();
+            if (attackAnimation) drawAttackAnimation();
 
             ctx.restore();
         }
@@ -172,8 +172,8 @@
         function drawTargets() {
             mapData.targets.forEach(tgt => {
                 const isSelected = selectedTarget && selectedTarget.id === tgt.id;
-                ctx.fillStyle = isSelected ? "#ffff00" : "#ff3333";
-                ctx.strokeStyle = isSelected ? "#ffffff" : "#ff9999";
+                ctx.fillStyle = tgt.destroyed ? "#555555" : (isSelected ? "#ffff00" : "#ff3333");
+                ctx.strokeStyle = tgt.destroyed ? "#777777" : (isSelected ? "#ffffff" : "#ff9999");
                 ctx.lineWidth = (isSelected ? 2 : 1) / camera.zoom;
 
                 ctx.beginPath();
@@ -184,9 +184,9 @@
                 ctx.arc(tgt.x, tgt.y, 2, 0, Math.PI * 2);
                 ctx.fill();
 
-                ctx.fillStyle = isSelected ? "#ffff00" : "#ff6666";
+                ctx.fillStyle = tgt.destroyed ? "#777777" : (isSelected ? "#ffff00" : "#ff6666");
                 ctx.font = `${11 / camera.zoom}px Courier New`;
-                ctx.fillText(tgt.code, tgt.x + 12, tgt.y - 2);
+                ctx.fillText(tgt.destroyed ? tgt.code + " [DESTROYED]" : tgt.code, tgt.x + 12, tgt.y - 2);
                 ctx.font = `${9 / camera.zoom}px Courier New`;
                 ctx.fillText(tgt.type, tgt.x + 12, tgt.y + 9);
             });
@@ -242,7 +242,91 @@
             ctx.setLineDash([]);
         }
 
+        function drawAttackAnimation() {
+            const { p1, p2, p3, progress, target } = attackAnimation;
+            let currentX, currentY, angle;
+
+            if (progress < 0.5) {
+                const t = progress / 0.5;
+                currentX = p1.x + (p2.x - p1.x) * t;
+                currentY = p1.y + (p2.y - p1.y) * t;
+                angle = Math.atan2(p2.y - p1.y, p2.x - p1.x);
+
+                if (t > 0.7 && t < 0.95) {
+                    ctx.strokeStyle = "#ffff00";
+                    ctx.lineWidth = 2 / camera.zoom;
+                    ctx.beginPath();
+                    ctx.moveTo(currentX, currentY);
+                    ctx.lineTo(p2.x, p2.y);
+                    ctx.stroke();
+                }
+                if (t >= 0.9) {
+                    target.destroyed = true;
+                    ctx.fillStyle = "rgba(255, 100, 0, 0.8)";
+                    ctx.beginPath();
+                    ctx.arc(p2.x, p2.y, (12 + Math.random() * 8) / camera.zoom, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+            } else {
+                const t = (progress - 0.5) / 0.5;
+                currentX = p2.x + (p3.x - p2.x) * t;
+                currentY = p2.y + (p3.y - p2.y) * t;
+                angle = Math.atan2(p3.y - p2.y, p3.x - p2.x);
+            }
+
+            ctx.save();
+            ctx.translate(currentX, currentY);
+            ctx.rotate(angle);
+            ctx.fillStyle = "#00ff66";
+            ctx.beginPath();
+            ctx.moveTo(10 / camera.zoom, 0);
+            ctx.lineTo(-8 / camera.zoom, -6 / camera.zoom);
+            ctx.lineTo(-4 / camera.zoom, 0);
+            ctx.lineTo(-8 / camera.zoom, 6 / camera.zoom);
+            ctx.closePath();
+            ctx.fill();
+            ctx.restore();
+        }
+
+        function startAttackRun() {
+            if (!selectedTarget) return;
+            targetModal.classList.add('hidden');
+            a10StatusEl.textContent = "ATTACKING";
+            a10StatusEl.className = "label";
+
+            let startTime = null;
+            const duration = 4000;
+
+            attackAnimation = {
+                p1: mapData.ip,
+                p2: { x: selectedTarget.x, y: selectedTarget.y },
+                p3: mapData.egress,
+                progress: 0,
+                target: selectedTarget
+            };
+
+            function step(timestamp) {
+                if (!startTime) startTime = timestamp;
+                const elapsed = timestamp - startTime;
+                attackAnimation.progress = Math.min(1, elapsed / duration);
+
+                drawMap();
+
+                if (attackAnimation.progress < 1) {
+                    requestAnimationFrame(step);
+                } else {
+                    attackAnimation = null;
+                    a10StatusEl.textContent = "MISSION COMPLETE";
+                    a10StatusEl.className = "green";
+                    drawMap();
+                }
+            }
+
+            requestAnimationFrame(step);
+        }
+
         canvas.addEventListener('click', (e) => {
+            if (attackAnimation) return;
             const rect = canvas.getBoundingClientRect();
             const clickX = e.clientX - rect.left;
             const clickY = e.clientY - rect.top;
@@ -256,7 +340,7 @@
                 if (dist < 30 / camera.zoom) clicked = tgt;
             });
 
-            if (clicked) {
+            if (clicked && !clicked.destroyed) {
                 selectedTarget = clicked;
                 showModal(clicked);
                 drawMap();
@@ -280,9 +364,7 @@
         });
 
         modalActionBtn.addEventListener('click', () => {
-            if (selectedTarget) {
-                alert(`[RADIO TRANSMISSION]\nAlpha-1 to Hog-1: 9-Line Briefing transmitted for ${selectedTarget.code}.\nHog-1 is Inbound!`);
-            }
+            startAttackRun();
         });
 
         canvas.addEventListener('mousedown', (e) => { isDragging = true; startPan = { x: e.clientX - camera.x, y: e.clientY - camera.y }; });
